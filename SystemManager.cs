@@ -12,42 +12,47 @@ public class SystemManager : MonoBehaviour
 {
     //マップ全体の大きさ
     [SerializeField]
-    const int MapWidth = 50;
+    int MapWidth = 50;
     [SerializeField]
-    const int MapHeight = 50;
+    int MapHeight = 50;
 
     //int型の二次元配列。要素数はMapWidthとMapHeightで決定する。
     public int[,] Map;
 
-    const int wall = 9;
-    const int road = 0;
+    int wall = 9;
+    int road = 0;
 
     //Wallオブジェクトをアタッチ
     public GameObject WallObject;
+    //床オブジェクトをアタッチ
+    public GameObject groundObject;
+    //壁・床の一辺の長さを入れる
+    public int squareLength;
 
 
     //部屋の高さの最小・最大値
     [SerializeField]
-    const int roomMinHeight = 5;
+    int roomMinHeight = 5;
     [SerializeField]
-    const int roomMaxHeight = 10;
+    int roomMaxHeight = 10;
 
     //部屋の横幅の最小・最大値
     [SerializeField]
-    const int roomMinWidth = 5;
+    int roomMinWidth = 5;
     [SerializeField]
-    const int roomMaxWidth = 10;
+    int roomMaxWidth = 10;
 
     //部屋数の最小・最大値
     [SerializeField]
-    const int RoomCountMin = 10;
+    int RoomCountMin = 10;
     [SerializeField]
-    const int RoomCountMax = 15;
+    int RoomCountMax = 15;
 
 
     //道の集合点を増やしたいならこれを増やす
-    [SerializeField]
+    //2以上だと道が途切れる可能性あり
     const int meetPointCount = 1;
+
 
     void Start()
     {
@@ -109,7 +114,7 @@ public class SystemManager : MonoBehaviour
             //壁の端から必ず2m離れるように調整
             //マップサイズが50 * 50の場合、[1～50, 1～50]を調整した値になる
             int roomPointX = Random.Range(2, MapWidth - roomMaxWidth - 2);
-            int roomPointY = Random.Range(2, MapWidth - roomMaxWidth - 2);
+            int roomPointY = Random.Range(2, MapHeight - roomMaxHeight - 2);
 
             //道の開始地点を、部屋のグリッドの範囲からランダムに決める
             int roadStartPointX = Random.Range(roomPointX, roomPointX + roomWidth);
@@ -285,9 +290,14 @@ public class SystemManager : MonoBehaviour
             {
                 if (Map[i, j] == wall)
                 {
-                    //マップサイズが50 * 50の場合、(-25～24, -25～24, 0)の座標にWallオブジェクトを生成している
-                    //j, iが1ずつ変化していくので、Wallも1mずつ配置されていく。
-                    Instantiate(WallObject, new Vector3(j - MapWidth / 2, i - MapHeight / 2, 0), Quaternion.identity);
+                    //マップサイズが50 * 50の場合、2500個のオブジェクトを生成する
+                    //【Wallの一辺の長さ】mずつ配置されていく。
+                    Instantiate(WallObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
+                }
+                //Map[i, j]がroadなら
+                else
+                {
+                    Instantiate(groundObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
                 }
             }
         }
