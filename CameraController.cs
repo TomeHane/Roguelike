@@ -5,13 +5,11 @@ using UnityEngine;
 //player‚ğ’Ç]‚·‚é‚æ‚¤‚ÉƒJƒƒ‰‚ğ“®‚©‚·
 public class CameraController : MonoBehaviour
 {
+    [SerializeField]
     Transform player;
 
     void Start()
     {
-        //player‚Ìtransform‚ğæ“¾‚·‚é
-        player = GameObject.FindGameObjectWithTag("Player").transform;
-
         //ƒJƒƒ‰‚Ìrotation‚ğŒˆ’è
         transform.rotation = Quaternion.Euler(10, 0, 0);
     }

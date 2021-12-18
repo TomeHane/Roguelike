@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    //他オブジェクト
+    [SerializeField]
+    Transform camera;
+    
     //自オブジェクト
     Rigidbody rb;
     Animator animator;
-
-    //動く方向
-    Vector3 movingDirection;
 
     //移動する速度
     //rigidbody.velocityに直接代入する
@@ -107,10 +108,21 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat("moveSpeed", moveSpeed);
 
 
-        //動く方向を割り出す
-        movingDirection = new Vector3 (x, 0, z);
+        //カメラの向きを取得し、入力値を掛けて動く方向を割り出す
+        //※camera.forward[right]ベクトルの長さは１
+        //カメラのZ方向のベクトル(正面方向の矢印) * WS入力値(-1.0f～1.0f)
+        Vector3 movingForward = camera.forward * z;
+        //カメラのX方向のベクトル(右方向の矢印) * AD入力値(-1.0f～1.0f)
+        Vector3 movingRight = camera.right * x;
+
+        //ベクトル合成
+        Vector3 movingDirection = movingForward + movingRight;
+        //宙に向かって移動しないように
+        movingDirection.y = 0f;
+
         //ベクトルの長さが1になるように調節
         movingDirection.Normalize();
+
         //RigidBodyのvelocityに代入する速度(ベクトル)を求める
         movingVelocity = movingDirection * speedMagnification * moveSpeed;
     }
