@@ -54,6 +54,26 @@ public class SystemManager : MonoBehaviour
     const int meetPointCount = 1;
 
 
+    //スポーン状況を管理するための列挙型
+    enum SpownArea
+    {
+        Disabled,
+        Enabled,
+        Player,
+        Enemy_hoge,
+        Enemy_piyo
+    }
+
+    //マス目ごとにスポーン状況を入れていく
+    SpownArea[,] spownAreas;
+
+
+
+    //デバッグ用オブジェクト
+    public GameObject hogeObject;
+
+
+
     void Start()
     {
         ResetMapData();
@@ -61,12 +81,34 @@ public class SystemManager : MonoBehaviour
         CreateSpaceData();
 
         CreateDangeon();
+
+        CheckSpownArea();
+
+
+
+        //デバッグ開始：SpownArea.Enabledの可視化
+        for (int i = 0; i < MapHeight; i++)
+        {
+            for (int j = 0; j < MapWidth; j++)
+            {
+                if (spownAreas[i, j] == SpownArea.Enabled)
+                {
+                    Instantiate(hogeObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
+                }
+            }
+        }
+        //デバッグ終了
+
+
+
     }
 
-    // Mapの二次元配列の初期化
+    //Mapの二次元配列の初期化
+    //spownAreasの二次元配列の初期化
     private void ResetMapData()
     {
         Map = new int[MapHeight, MapWidth];
+        spownAreas = new SpownArea[MapHeight, MapWidth];
 
         for (int i = 0; i < MapHeight; i++)
         {
@@ -74,6 +116,9 @@ public class SystemManager : MonoBehaviour
             {
                 //wallはint値
                 Map[i, j] = wall;
+
+                //全マスのスポーン状況を"使用不可"に
+                spownAreas[i, j] = SpownArea.Disabled;
             }
         }
     }
@@ -298,6 +343,48 @@ public class SystemManager : MonoBehaviour
                 else
                 {
                     Instantiate(groundObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
+                }
+            }
+        }
+    }
+
+
+    //スポーン可能エリアをチェックする関数
+    void CheckSpownArea()
+    {
+        //周囲八方がroadである必要があるため、壁際２マスはチェック対象外
+        for(int i = 2; i < MapHeight - 2; i++)
+        {
+            for (int j = 2; j < MapWidth -2; j++)
+            {
+                //該当マスがroadなら
+                if (Map[i, j] == road)
+                {
+                    //一旦スポーン可能マスにする
+                    spownAreas[i, j] = SpownArea.Enabled;
+                }
+
+                //周囲八方を確認する関数
+                CheckAllSides(i, j);
+            }
+        }
+    }
+
+    //周囲八方を確認する関数
+    void CheckAllSides(int i, int j)
+    {
+        for (int k = -1; k <= 1; k++)
+        {
+            for (int l = -1; l <= 1; l++)
+            {
+                //もし八方のいずれかがroadじゃなければ
+                if(Map[i + k, j + l] != road)
+                {
+                    //スポーン不可マスにする
+                    //∵"通路"ではなく"部屋"でのみスポーンさせたいから
+                    spownAreas[i, j] = SpownArea.Disabled;
+
+                    return;
                 }
             }
         }
