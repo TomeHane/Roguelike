@@ -98,23 +98,7 @@ public class PlayerController : MonoBehaviour
         //左クリック or Enterを押したら
         if (Input.GetButtonDown("Fire1"))
         {
-            //Attack01フラグが立っていなければ
-            if (!flagAttack01)
-            {
-                //Attack01フラグを立てる
-                flagAttack01 = true;
-                //トリガーをセットして、Attack01を再生
-                animator.SetTrigger("attack1");
-            }
-            //Attack01フラグが立っていて且つ、Attack02フラグが立っていなければ
-            else if(!flagAttack02)
-            {
-                //Attack02フラグを立てる
-                flagAttack02 = true;
-                //トリガーをセットしておく
-                animator.SetTrigger("attack2");
-            }
-            
+            StartCoroutine(AttackAnimationFlow());
         }
 
         //----------入力受付終了----------------------------------------
@@ -209,6 +193,33 @@ public class PlayerController : MonoBehaviour
     private void FixedUpdate()
     {
         rb.velocity = movingVelocity;
+    }
+
+
+    IEnumerator AttackAnimationFlow()
+    {
+        //Attack01フラグが立っていなければ
+        //＋Attack02フラグが立っていなければ　∵Attack02中にトリガーをセットできないようにする
+        if (!flagAttack01 && !flagAttack02)
+        {
+            //トリガーをセットして、Attack01を再生
+            animator.SetTrigger("attack1");
+
+            yield return null;
+
+            //1フレーム後にAttack01フラグを立てる
+            flagAttack01 = true;
+        }
+        //Attack01フラグが立っていて且つ、Attack02フラグが立っていなければ
+        else if (!flagAttack02)
+        {
+            //トリガーをセットしておく
+            animator.SetTrigger("attack2");
+            //Attack02フラグを立てる
+            flagAttack02 = true;
+        }
+
+        
     }
 
 
