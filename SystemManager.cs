@@ -67,10 +67,22 @@ public class SystemManager : MonoBehaviour
     //マス目ごとにスポーン状況を入れていく
     SpownArea[,] spownAreas;
 
+    //スポーン可能エリアを覚えさせるリスト
+    List<int> spawnablePointListX = new List<int>();
+    List<int> spawnablePointListY = new List<int>();
+
+    //オブジェクト設置エリアを覚えさせるリスト
+    List<int> placedPointListX = new List<int>();
+    List<int> placedPointListY = new List<int>();
+
+    //設置するオブジェクト
+    public GameObject playerObject;
+
 
 
     //デバッグ用オブジェクト
     public GameObject hogeObject;
+    public GameObject piyoObject;
 
 
 
@@ -84,10 +96,12 @@ public class SystemManager : MonoBehaviour
 
         CheckSpownArea();
 
+        PlacedObjects();
+
 
 
         //デバッグ開始：SpownArea.Enabledの可視化
-        for (int i = 0; i < MapHeight; i++)
+        /*for (int i = 0; i < MapHeight; i++)
         {
             for (int j = 0; j < MapWidth; j++)
             {
@@ -96,7 +110,37 @@ public class SystemManager : MonoBehaviour
                     Instantiate(hogeObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
                 }
             }
+        }*/
+        //デバッグ終了
+
+        //デバッグ開始：SpawnablePointの可視化
+        /*if (spawnablePointX.Count == spawnablePointY.Count)
+        {
+            Debug.Log($"スポーン可能エリア数：{spawnablePointX.Count}");
         }
+
+        //ランダムなSpawnablePointにhogeオブジェクトを生成
+        int ri = Random.Range(0, spawnablePointX.Count);
+        int rx = spawnablePointX[ri];
+        int ry = spawnablePointY[ri];
+        Instantiate(hogeObject, new Vector3(squareLength * (rx - MapWidth / 2), 0, squareLength * (ry - MapHeight / 2)), Quaternion.identity);
+        //SpawnablePointを削除
+        spawnablePointX.RemoveAt(ri);
+        spawnablePointY.RemoveAt(ri);
+
+        if (spawnablePointX.Count == spawnablePointY.Count)
+        {
+            Debug.Log($"スポーン可能エリア数：{spawnablePointX.Count}");
+        }
+
+        //SpawnablePointの可視化
+        for (int i = 0; i < spawnablePointX.Count; i++)
+        {
+            int x = spawnablePointX[i];
+            int y = spawnablePointY[i];
+
+            Instantiate(piyoObject, new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
+        }*/
         //デバッグ終了
 
 
@@ -362,10 +406,14 @@ public class SystemManager : MonoBehaviour
                 {
                     //一旦スポーン可能マスにする
                     spownAreas[i, j] = SpownArea.Enabled;
-                }
 
-                //周囲八方を確認する関数
-                CheckAllSides(i, j);
+                    //リスト先頭にスポーン可能エリアを覚えさせる
+                    spawnablePointListX.Insert(0, j);
+                    spawnablePointListY.Insert(0, i);
+
+                    //周囲八方を確認する関数
+                    CheckAllSides(i, j);
+                }
             }
         }
     }
@@ -384,8 +432,49 @@ public class SystemManager : MonoBehaviour
                     //∵"通路"ではなく"部屋"でのみスポーンさせたいから
                     spownAreas[i, j] = SpownArea.Disabled;
 
+                    //リスト先頭の値を削除する
+                    spawnablePointListX.RemoveAt(0);
+                    spawnablePointListY.RemoveAt(0);
+
                     return;
                 }
+            }
+        }
+    }
+
+
+    //キャラクター等のオブジェクト設置する関数
+    void PlacedObjects()
+    {
+        //プレイヤーの設置位置をランダムで決定する
+        int randomNum = Random.Range(0, spawnablePointListX.Count);
+        int playerPointX = spawnablePointListX[randomNum];
+        int playerPointY = spawnablePointListY[randomNum];
+
+        //プレイヤーの設置位置のスポーン状況を"Player"に変更
+        spownAreas[playerPointY, playerPointX] = SpownArea.Player;
+
+        //スポーン状況が"Enabled"ではなくなったので、SpawnablePointから削除
+        spawnablePointListX.RemoveAt(randomNum);
+        spawnablePointListY.RemoveAt(randomNum);
+
+        //placedPointListX[Y]にオブジェクト設置エリアを覚えさせる
+        //実質的に、spawnablePointListX[Y] → placedPointListX[Y]への移し替えを行っている
+        placedPointListX.Insert(0, playerPointX);
+        placedPointListY.Insert(0, playerPointY);
+
+
+        //オブジェクトの設置
+        for (int i = 0; i < placedPointListX.Count; i++)
+        {
+            int x = placedPointListX[i];
+            int y = placedPointListY[i];
+
+            //プレイヤーの設置
+            if (spownAreas[y, x] == SpownArea.Player)
+            {
+                playerObject.transform.position = new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2));
+                playerObject.SetActive(true);
             }
         }
     }

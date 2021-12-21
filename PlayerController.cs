@@ -224,9 +224,9 @@ public class PlayerController : MonoBehaviour
 
 
     //デバッグ用
-    private void OnGUI()
+    /*private void OnGUI()
     {
         string label = $"フラグAttack01:{flagAttack01}\nフラグAttack02:{flagAttack02}";
         GUI.Label(new Rect(50, 50, 200, 60), label);
-    }
+    }*/
 }
