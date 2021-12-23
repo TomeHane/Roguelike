@@ -11,10 +11,9 @@ using UnityEngine;
 public class SystemManager : MonoBehaviour
 {
     //マップ全体の大きさ
-    [SerializeField]
-    int MapWidth = 50;
-    [SerializeField]
-    int MapHeight = 50;
+    //MoveEnemy.csで使うのでpublic
+    public int MapWidth = 50;
+    public int MapHeight = 50;
 
     //int型の二次元配列。要素数はMapWidthとMapHeightで決定する。
     public int[,] Map;
@@ -60,7 +59,7 @@ public class SystemManager : MonoBehaviour
         Disabled,
         Enabled,
         Player,
-        Enemy_hoge,
+        EnemySkeleton,
         Enemy_piyo
     }
 
@@ -68,8 +67,12 @@ public class SystemManager : MonoBehaviour
     SpownArea[,] spownAreas;
 
     //スポーン可能エリアを覚えさせるリスト
-    List<int> spawnablePointListX = new List<int>();
-    List<int> spawnablePointListY = new List<int>();
+    //エネミーが目的地を設定するときにも使うのでpublic
+    //System.NonSerialized:インスペクター上に表示しない
+    [System.NonSerialized]
+    public List<int> spawnablePointListX = new List<int>();
+    [System.NonSerialized]
+    public List<int> spawnablePointListY = new List<int>();
 
     //オブジェクト設置エリアを覚えさせるリスト
     List<int> placedPointListX = new List<int>();
@@ -77,13 +80,7 @@ public class SystemManager : MonoBehaviour
 
     //設置するオブジェクト
     public GameObject playerObject;
-
-
-
-    //デバッグ用オブジェクト
-    public GameObject hogeObject;
-    public GameObject piyoObject;
-
+    public GameObject enemySkeleton;
 
 
     void Start()
@@ -97,54 +94,6 @@ public class SystemManager : MonoBehaviour
         CheckSpownArea();
 
         PlacedObjects();
-
-
-
-        //デバッグ開始：SpownArea.Enabledの可視化
-        /*for (int i = 0; i < MapHeight; i++)
-        {
-            for (int j = 0; j < MapWidth; j++)
-            {
-                if (spownAreas[i, j] == SpownArea.Enabled)
-                {
-                    Instantiate(hogeObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
-                }
-            }
-        }*/
-        //デバッグ終了
-
-        //デバッグ開始：SpawnablePointの可視化
-        /*if (spawnablePointX.Count == spawnablePointY.Count)
-        {
-            Debug.Log($"スポーン可能エリア数：{spawnablePointX.Count}");
-        }
-
-        //ランダムなSpawnablePointにhogeオブジェクトを生成
-        int ri = Random.Range(0, spawnablePointX.Count);
-        int rx = spawnablePointX[ri];
-        int ry = spawnablePointY[ri];
-        Instantiate(hogeObject, new Vector3(squareLength * (rx - MapWidth / 2), 0, squareLength * (ry - MapHeight / 2)), Quaternion.identity);
-        //SpawnablePointを削除
-        spawnablePointX.RemoveAt(ri);
-        spawnablePointY.RemoveAt(ri);
-
-        if (spawnablePointX.Count == spawnablePointY.Count)
-        {
-            Debug.Log($"スポーン可能エリア数：{spawnablePointX.Count}");
-        }
-
-        //SpawnablePointの可視化
-        for (int i = 0; i < spawnablePointX.Count; i++)
-        {
-            int x = spawnablePointX[i];
-            int y = spawnablePointY[i];
-
-            Instantiate(piyoObject, new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
-        }*/
-        //デバッグ終了
-
-
-
     }
 
     //Mapの二次元配列の初期化
@@ -446,22 +395,17 @@ public class SystemManager : MonoBehaviour
     //キャラクター等のオブジェクト設置する関数
     void PlacedObjects()
     {
-        //プレイヤーの設置位置をランダムで決定する
-        int randomNum = Random.Range(0, spawnablePointListX.Count);
-        int playerPointX = spawnablePointListX[randomNum];
-        int playerPointY = spawnablePointListY[randomNum];
+        //プレイヤーの設置位置を決定する
+        DecideObjectPosition(SpownArea.Player);
 
-        //プレイヤーの設置位置のスポーン状況を"Player"に変更
-        spownAreas[playerPointY, playerPointX] = SpownArea.Player;
+        //スケルトンエネミーの数を決定する
+        int enemySkeletonNum = Random.Range(2, 5);
+        for (int i = 0; i < enemySkeletonNum; i++)
+        {
+            //スケルトンエネミーの設置位置を決定する
+            DecideObjectPosition(SpownArea.EnemySkeleton);
+        }
 
-        //スポーン状況が"Enabled"ではなくなったので、SpawnablePointから削除
-        spawnablePointListX.RemoveAt(randomNum);
-        spawnablePointListY.RemoveAt(randomNum);
-
-        //placedPointListX[Y]にオブジェクト設置エリアを覚えさせる
-        //実質的に、spawnablePointListX[Y] → placedPointListX[Y]への移し替えを行っている
-        placedPointListX.Insert(0, playerPointX);
-        placedPointListY.Insert(0, playerPointY);
 
 
         //オブジェクトの設置
@@ -476,6 +420,32 @@ public class SystemManager : MonoBehaviour
                 playerObject.transform.position = new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2));
                 playerObject.SetActive(true);
             }
+            //スケルトンエネミーの生成
+            if (spownAreas[y, x] == SpownArea.EnemySkeleton)
+            {
+                Instantiate(enemySkeleton, new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
+            }
         }
+    }
+
+    //オブジェクトの設置位置を決める関数
+    void DecideObjectPosition(SpownArea spownArea)
+    {
+        //オブジェクトの設置位置をランダムで決定する
+        int randomNum = Random.Range(0, spawnablePointListX.Count);
+        int objectPointX = spawnablePointListX[randomNum];
+        int objectPointY = spawnablePointListY[randomNum];
+
+        //オブジェクトの設置位置のスポーン状況を【対応するもの】に変更
+        spownAreas[objectPointY, objectPointX] = spownArea;
+
+        //スポーン状況が【Enabled】ではなくなったので、SpawnablePointListから削除
+        spawnablePointListX.RemoveAt(randomNum);
+        spawnablePointListY.RemoveAt(randomNum);
+
+        //placedPointListX[Y]にオブジェクト設置エリアを覚えさせる
+        //実質的に、spawnablePointListX[Y] → placedPointListX[Y]への移し替えを行っている
+        placedPointListX.Insert(0, objectPointX);
+        placedPointListY.Insert(0, objectPointY);
     }
 }
