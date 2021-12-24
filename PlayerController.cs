@@ -126,12 +126,12 @@ public class PlayerController : MonoBehaviour
 
         //ベクトルの大きさが0.01以上の時に向きを変える処理をする
         //Vector3.magnitude:ベクトルの長さをfloat型で返す
-        if (diff.magnitude > 0.01)
+        if (diff.magnitude > 0.01f)
         {
             //Quaternion.LookRotation()の引数は、Quaternion
             Quaternion rot = Quaternion.LookRotation(diff);
             //現在の向きと目標の向きとで、球面線形補間
-            rot = Quaternion.Slerp(avatar.transform.rotation, rot, 0.2f);
+            rot = Quaternion.Slerp(avatar.transform.rotation, rot, 0.4f);
             //向きを変える
             avatar.transform.rotation = rot;
 
