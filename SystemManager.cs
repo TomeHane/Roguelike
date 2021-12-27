@@ -21,6 +21,8 @@ public class SystemManager : MonoBehaviour
     int wall = 9;
     int road = 0;
 
+    //整理用
+    public Transform dungeon;
     //Wallオブジェクトをアタッチ
     public GameObject WallObject;
     //床オブジェクトをアタッチ
@@ -60,7 +62,7 @@ public class SystemManager : MonoBehaviour
         Enabled,
         Player,
         EnemySkeleton,
-        Enemy_piyo
+        EnemyWizard
     }
 
     //マス目ごとにスポーン状況を入れていく
@@ -81,6 +83,7 @@ public class SystemManager : MonoBehaviour
     //設置するオブジェクト
     public GameObject playerObject;
     public GameObject enemySkeleton;
+    public GameObject enemyWizard;
 
 
     void Start()
@@ -330,12 +333,13 @@ public class SystemManager : MonoBehaviour
                 {
                     //マップサイズが50 * 50の場合、2500個のオブジェクトを生成する
                     //【Wallの一辺の長さ】mずつ配置されていく。
-                    Instantiate(WallObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
+                    //整理するために、Instantiate()で生成したオブジェクトの親をdungeonに設定している
+                    Instantiate(WallObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity).transform.parent = dungeon;
                 }
                 //Map[i, j]がroadなら
                 else
                 {
-                    Instantiate(groundObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
+                    Instantiate(groundObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity).transform.parent = dungeon;
                 }
             }
         }
@@ -399,13 +403,20 @@ public class SystemManager : MonoBehaviour
         DecideObjectPosition(SpownArea.Player);
 
         //スケルトンエネミーの数を決定する
-        int enemySkeletonNum = Random.Range(2, 5);
+        int enemySkeletonNum = Random.Range(4, 7);
         for (int i = 0; i < enemySkeletonNum; i++)
         {
             //スケルトンエネミーの設置位置を決定する
             DecideObjectPosition(SpownArea.EnemySkeleton);
         }
 
+        //ウィザードエネミー数を決定する
+        int enemyWizardNum = Random.Range(1, 4);
+        for (int i = 0; i < enemyWizardNum; i++)
+        {
+            //ウィザードエネミーの設置位置を決定する
+            DecideObjectPosition(SpownArea.EnemyWizard);
+        }
 
 
         //オブジェクトの設置
@@ -424,6 +435,11 @@ public class SystemManager : MonoBehaviour
             if (spownAreas[y, x] == SpownArea.EnemySkeleton)
             {
                 Instantiate(enemySkeleton, new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
+            }
+            //ウィザードエネミーの生成
+            if (spownAreas[y, x] == SpownArea.EnemyWizard)
+            {
+                Instantiate(enemyWizard, new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
             }
         }
     }

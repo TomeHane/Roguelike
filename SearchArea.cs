@@ -26,8 +26,6 @@ public class SearchArea : MonoBehaviour
         {
             //モンスターのステータスを"追跡時"に変更する
             moveEnemy.status = MoveEnemy.Status.Chase;
-            //"Overlooking"を解除しておく
-            moveEnemy.animator.SetBool("isOverlooking", false);
             //一定時間後にステータスの判定を行うコルーチンを動かす
             StartCoroutine(CheckStatus());
         }

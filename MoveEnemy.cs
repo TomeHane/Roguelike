@@ -57,6 +57,8 @@ public class MoveEnemy : MonoBehaviour
 
 	//"Update()で一度だけ動く処理"を実現するためのフラグ
 	bool isOnceCalled = false;
+	//"追跡開始・終了時に一度だけ動く処理"を実現するためのフラグ
+	bool isChasing = false;
 	//(目的地)到着フラグ
 	bool isArrived = false;
 	//攻撃中フラグ
@@ -113,11 +115,27 @@ public class MoveEnemy : MonoBehaviour
         //通常時なら
         if (status == Status.Common)
         {
+			//追跡終了時一度だけ動く処理
+			if (isChasing)
+			{
+				//フラグをオフにする
+				isChasing = false;
+			}
+
 			CommonMove();
 		}
         //追跡時なら
         if (status == Status.Chase)
         {
+            //追跡開始時一度だけ動く処理
+            if (!isChasing)
+            {
+				//"Overlooking"を解除しておく
+				animator.SetBool(PARAMETER_IS_OVERLOOKING, false);
+				//フラグを立てる
+				isChasing = true;
+			}
+			
 			ChaseMove();
         }
 		
