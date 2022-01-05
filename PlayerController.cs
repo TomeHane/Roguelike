@@ -9,9 +9,13 @@ public class PlayerController : MonoBehaviour
     Camera cam;
     [SerializeField]
     GameObject avatar;
+    //剣の当たり判定
+    [SerializeField]
+    GameObject hitPlayerSword;
 
     //自オブジェクト
     Rigidbody rb;
+    Collider col;
     Animator animator;
 
     //移動する速度
@@ -38,23 +42,41 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     float runSpeed = 3.0f;
 
+    //ステータス
+    [SerializeField]
+    float maxHp = 100.0f;
+    float hp;
 
     //ダッシュフラグ
-    bool flagDash = false;
+    bool isDash = false;
     //Attack01フラグ
-    bool flagAttack01 = false;
+    bool isAttack01 = false;
     //Attack02フラグ
-    bool flagAttack02 = false;
+    bool isAttack02 = false;
+    //無敵(インビジブル)フラグ
+    bool isInvincible = false;
+    //被ダメフラグ
+    bool isGetHit = false;
+    //死亡フラグ
+    bool isDead = false;
+
 
     private void Start()
     {
         //自オブジェクトのコンポーネントを、インスペクター上でアタッチすることはできないため
         rb = GetComponent<Rigidbody>();
+        col = GetComponent<Collider>();
         animator = GetComponent<Animator>();
 
         //moveSpeedを初期化
         moveSpeed = idleSpeed;
         animator.SetFloat("moveSpeed", moveSpeed);
+
+        //HPを初期化
+        hp = maxHp;
+
+        //剣の当たり判定を非アクティブ状態にしておく
+        hitPlayerSword.SetActive(false);
     }
 
 
@@ -63,24 +85,40 @@ public class PlayerController : MonoBehaviour
     {
         //----------フラグチェック開始----------------------------------------
 
-        //Attack01フラグが立っていて且つ、現在のステートがAttack01じゃなければ
-        if (flagAttack01 && !animator.GetCurrentAnimatorStateInfo(0).IsName("NormalAttack01_SwordShield"))
+        //死亡フラグがオンならreturn;
+        if (isDead)
         {
-            //Debug.Log("Attack01フラグオフ");
-            //Debug.Break();
+            return;
+        }
 
+        //被ダメフラグがオンならreturn;
+        if (isGetHit)
+        {
+            return;
+        }
+
+        //Attack01フラグが立っていて且つ、現在のステートがAttack01じゃなければ
+        if (isAttack01 && !animator.GetCurrentAnimatorStateInfo(0).IsName("NormalAttack01_SwordShield"))
+        {
             //Attack01フラグをオフにする
-            flagAttack01 = false;
+            isAttack01 = false;
+
+            //このとき、Attack02フラグが立ってなければ
+            if (!isAttack02)
+            {
+                //剣の当たり判定をオフにする
+                hitPlayerSword.SetActive(false);
+            }
         }
 
         //Attack02フラグのみ立っている（Attack01再生中ではない）且つ、現在のステートがAttack02じゃなければ
-        if (!flagAttack01 && flagAttack02 && !animator.GetCurrentAnimatorStateInfo(0).IsName("NormalAttack02_SwordShield"))
+        if (!isAttack01 && isAttack02 && !animator.GetCurrentAnimatorStateInfo(0).IsName("NormalAttack02_SwordShield"))
         {
-            //Debug.Log("Attack02フラグオフ");
-            //Debug.Break();
-
             //Attack02フラグをオフにする
-            flagAttack02 = false;
+            isAttack02 = false;
+
+            //剣の当たり判定をオフにする
+            hitPlayerSword.SetActive(false);
         }
 
         //----------フラグチェック終了----------------------------------------
@@ -92,7 +130,7 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButtonDown("Fire3"))
         {
             //ダッシュフラグを切り替える
-            flagDash = !flagDash;
+            isDash = !isDash;
         }
 
         //左クリック or Enterを押したら
@@ -107,7 +145,7 @@ public class PlayerController : MonoBehaviour
         //----------return処理開始----------------------------------------
 
         //攻撃中なら
-        if (flagAttack01 || flagAttack02)
+        if (isAttack01 || isAttack02)
         {
             //速度ベクトルをゼロにしてreturn
             movingVelocity = Vector3.zero;
@@ -152,7 +190,7 @@ public class PlayerController : MonoBehaviour
             moveSpeed = idleSpeed;
         }
         //WASD入力があり、ダッシュフラグがtrueの場合
-        else if(flagDash)
+        else if(isDash)
         {
             moveSpeed = runSpeed;
         }
@@ -200,26 +238,113 @@ public class PlayerController : MonoBehaviour
     {
         //Attack01フラグが立っていなければ
         //＋Attack02フラグが立っていなければ　∵Attack02中にトリガーをセットできないようにする
-        if (!flagAttack01 && !flagAttack02)
+        if (!isAttack01 && !isAttack02)
         {
             //トリガーをセットして、Attack01を再生
             animator.SetTrigger("attack1");
 
+            //剣の当たり判定をアクティブ状態にする
+            hitPlayerSword.SetActive(true);
+
             yield return null;
 
             //1フレーム後にAttack01フラグを立てる
-            flagAttack01 = true;
+            isAttack01 = true;
         }
         //Attack01フラグが立っていて且つ、Attack02フラグが立っていなければ
-        else if (!flagAttack02)
+        else if (!isAttack02)
         {
             //トリガーをセットしておく
             animator.SetTrigger("attack2");
             //Attack02フラグを立てる
-            flagAttack02 = true;
+            isAttack02 = true;
         }
 
         
+    }
+
+
+    //コライダーがトリガーに接触したときに動く
+    private void OnTriggerEnter(Collider other)
+    {
+        //死亡フラグがオンならreturn;
+        if (isDead)
+        {
+            return;
+        }
+
+        //無敵時間ではない且つ、EnemyWeaponに当たった場合
+        if (!isInvincible && other.gameObject.tag == "EnemyWeapon")
+        {
+            //速度ベクトルをゼロにして動きを止める
+            movingVelocity = Vector3.zero;
+
+            //当たったゲームオブジェクトの名前を取得
+            string weaponName = other.gameObject.name;
+            //被ダメージを格納する変数を用意
+            float getDamage = 0f;
+
+            //オブジェクト名をもとにダメージを決定する
+            switch (weaponName)
+            {
+                case "HitSkeletonSword":
+                    getDamage = 10.0f;
+                    break;
+                case "Fireball(Clone)":
+                    getDamage = 15.0f;
+                    break;
+                default:
+                    break;
+            }
+
+            //プレイヤーにダメージを与える
+            hp -= getDamage;
+
+            Debug.Log($"プレイヤーに{getDamage}ダメージ！");
+            Debug.Log($"残りHP：{hp}");
+
+            //HPが0以下なら
+            if (hp <= 0)
+            {
+                animator.SetBool("isDead", true);
+
+                //他オブジェクトとぶつからないよう、コライダーを切っておく
+                col.enabled = false;
+                //落ちていかないよう、重力を切っておく
+                rb.useGravity = false;
+
+                isDead = true;
+                return;
+            }
+
+            //一定時間無敵状態にする
+            isInvincible = true;
+            StartCoroutine(ReleaseInvincible());
+
+            //攻撃中ではない場合
+            if (!isAttack01 && !isAttack02)
+            {
+                animator.SetTrigger("getHit");
+
+                //アニメーション"GetHit_SwordShield"が再生されている間、被ダメフラグを立てる
+                isGetHit = true;
+                StartCoroutine(ReleaseGetHit());
+            }
+        }
+    }
+
+    //無敵状態を解除するコルーチン
+    IEnumerator ReleaseInvincible()
+    {
+        yield return new WaitForSeconds(3.0f);
+        isInvincible = false;
+    }
+
+    //被ダメフラグを解除するコルーチン
+    IEnumerator ReleaseGetHit()
+    {
+        yield return new WaitForSeconds(0.7f);
+        isGetHit = false;
     }
 
 

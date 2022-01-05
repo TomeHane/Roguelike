@@ -4,8 +4,13 @@ using UnityEngine;
 
 public class MoveEnemy : MonoBehaviour
 {
+	//子オブジェクトをアタッチ
+	[SerializeField]
+	GameObject hitEnemySword;
+
 	//自オブジェクトから取得
 	Rigidbody rb;
+	Collider col;
 	//SearchArea.csで使用
 	[System.NonSerialized]
 	public Animator animator;
@@ -55,14 +60,28 @@ public class MoveEnemy : MonoBehaviour
 	[SerializeField]
 	float attackTime = 8.0f;
 
+	//攻撃に移るまでの最大時間(プレイヤーに向かって走り続ける最大時間)
+	[SerializeField]
+	float maxRunningTime = 5.0f;
+	//走り続けている時間
+	float currentRunningTime = 0f;
+
 	//"Update()で一度だけ動く処理"を実現するためのフラグ
 	bool isOnceCalled = false;
 	//"追跡開始・終了時に一度だけ動く処理"を実現するためのフラグ
 	bool isChasing = false;
 	//(目的地)到着フラグ
 	bool isArrived = false;
-	//攻撃中フラグ
+	//攻撃中フラグ("攻撃中"には攻撃後の硬直時間も含まれている)
 	bool isAttacking = false;
+	//攻撃アニメーション実行中に立てるフラグ
+	bool isAttackAnimation = false;
+	//(攻撃の)助走フラグ　∵いきなり攻撃動作に入らないためのもの
+	bool isRunUp = false;
+	//被ダメフラグ
+	bool isGetHit = false;
+	//死亡フラグ
+	bool isDead = false;
 
 	//モンスターの状態。Commonが通常時で、Chaseが追跡時を表す。
 	public enum Status
@@ -75,12 +94,18 @@ public class MoveEnemy : MonoBehaviour
 	[System.NonSerialized]
 	public Status status;
 
+	//HP
+	[SerializeField]
+	float maxHp = 40.0f;
+	float hp;
+
 
 	void Start()
 	{
 		//自オブジェクトから取得
 		animator = GetComponent<Animator>();
 		rb = GetComponent<Rigidbody>();
+		col = GetComponent<Collider>();
 
 		//他オブジェクトから取得
 		player = GameObject.FindGameObjectWithTag("Player");
@@ -99,6 +124,8 @@ public class MoveEnemy : MonoBehaviour
 
 		//ステータスを"通常時"で初期化
 		status = Status.Common;
+		//HPを初期化
+		hp = maxHp;
 	}
 
 	void Update()
@@ -112,8 +139,20 @@ public class MoveEnemy : MonoBehaviour
 			isOnceCalled = true;
 		}
 
-        //通常時なら
-        if (status == Status.Common)
+		//死亡フラグがオンならreturn;
+		if (isDead)
+		{
+			return;
+		}
+
+		//被ダメフラグがオンならreturn;
+		if (isGetHit)
+		{
+			return;
+		}
+
+		//通常時なら
+		if (status == Status.Common)
         {
 			//追跡終了時一度だけ動く処理
 			if (isChasing)
@@ -132,6 +171,8 @@ public class MoveEnemy : MonoBehaviour
             {
 				//"Overlooking"を解除しておく
 				animator.SetBool(PARAMETER_IS_OVERLOOKING, false);
+				//currentRunningTimeを初期化
+				currentRunningTime = 0f;
 				//フラグを立てる
 				isChasing = true;
 			}
@@ -179,15 +220,25 @@ public class MoveEnemy : MonoBehaviour
         //攻撃フラグがオフ（攻撃範囲外）なら
         if (!isAttacking)
         {
+			//走り続けている時間を加算
+			currentRunningTime += Time.deltaTime;
+
 			//向きを変える処理
 			ChangeRotation();
 
 			//目的地と使用するアニメーションから、移動方向と移動速度を決める
 			DecideVelocity(player.transform.position, runSpeed);
 
-            //攻撃範囲に入った場合
-            if (Vector3.Distance(transform.position, player.transform.position) < attackRange)
+			//攻撃範囲に入った又は、一定時間以上走り続けていた場合
+			if (Vector3.Distance(transform.position, player.transform.position) < attackRange 
+				|| currentRunningTime >= maxRunningTime)
             {
+				//攻撃助走中なら処理を中断
+                if (isRunUp)
+                {
+					return;
+                }
+
 				//攻撃フラグを立てる
 				isAttacking = true;
 
@@ -201,6 +252,9 @@ public class MoveEnemy : MonoBehaviour
 				moveSpeed = standSpeed;
 				animator.SetFloat(PARAMETER_MOVESPEED, moveSpeed);
 
+				//currentRunningTimeを初期化
+				currentRunningTime = 0f;
+
 				//一定時間後に攻撃フラグを解除するコルーチンを飛ばす
 				StartCoroutine(StandStillAttacking());
 			}
@@ -210,6 +264,13 @@ public class MoveEnemy : MonoBehaviour
 
 	private void FixedUpdate()
     {
+		//ノックバック時(致命ダメージを受けたとき)に、後ろに移動させたいので
+		//rb.velocityにVector3.zeroを代入させないようreturn;する
+        if (isDead)
+        {
+			return;
+        }
+
 		//移動させる
 		rb.velocity = velocity;
     }
@@ -297,10 +358,128 @@ public class MoveEnemy : MonoBehaviour
     }
 
 
-	//攻撃時、静止する時間
+	//攻撃のクールタイム
 	IEnumerator StandStillAttacking()
-    {
+	{
+		//静止する
 		yield return new WaitForSeconds(attackTime);
+
+		//追跡のみ行う
+		isRunUp = true;
 		isAttacking = false;
+
+		yield return new WaitForSeconds(1.0f);
+
+		//追跡&攻撃
+		isRunUp = false;
+	}
+
+
+	//コライダーがトリガーに接触したときに動く
+	private void OnTriggerEnter(Collider other)
+	{
+		//死亡フラグがオンならreturn;
+		if (isDead)
+		{
+			return;
+		}
+
+		//PlayerWeaponに当たった場合
+		if (other.gameObject.tag == "PlayerWeapon")
+		{
+			//速度ベクトルをゼロにして動きを止める
+			velocity = Vector3.zero;
+
+			//当たったゲームオブジェクトの名前を取得
+			string weaponName = other.gameObject.name;
+			//被ダメージを格納する変数を用意
+			float getDamage = 0f;
+
+			//オブジェクト名をもとにダメージを決定する
+			switch (weaponName)
+			{
+				case "HitPlayerSword":
+					getDamage = 10.0f;
+					break;
+				default:
+					break;
+			}
+
+			//プレイヤーにダメージを与える
+			hp -= getDamage;
+
+			Debug.Log($"スケルトンに{getDamage}ダメージ！");
+			Debug.Log($"スケルトンの残りHP：{hp}");
+
+			//HPが0以下なら
+			if (hp <= 0)
+			{
+				//剣の当たり判定を切っておく
+				hitEnemySword.SetActive(false);
+
+				//プレイヤーがいる方に向く(y座標は自身に合わせる)
+				Vector3 targetPos =  player.transform.position;
+				targetPos.y = transform.position.y;
+				transform.LookAt(targetPos);
+
+				animator.SetTrigger("getFatalHit");
+				animator.SetBool("isDead", true);
+
+				isDead = true;
+				return;
+			}
+
+			//攻撃アニメーション中ではない且つ、被ダメアニメーション中ではない場合
+			if (!isAttackAnimation && !isGetHit)
+			{
+				animator.SetTrigger("getHit");
+
+				//被ダメアニメーションが再生されている間、被ダメフラグを立てる
+				isGetHit = true;
+				StartCoroutine(ReleaseGetHit());
+
+				//ステータスを「追跡時」に切り替える
+				status = Status.Chase;
+			}
+		}
+	}
+
+	//被ダメフラグを解除するコルーチン
+	IEnumerator ReleaseGetHit()
+	{
+		yield return new WaitForSeconds(0.9f);
+		isGetHit = false;
+	}
+
+
+	//----------アニメーションイベントで動かす関数----------------------------------------
+	
+	void StartAttackAnimation()
+    {
+		isAttackAnimation = true;
     }
+
+	void EndAttackAnimation()
+    {
+		isAttackAnimation = false;
+    }
+
+	//死亡アニメーション再生終了時に動かす処理
+	void EndDeathAnimation()
+    {
+		//他オブジェクトとぶつからないようにするため
+		col.enabled = false;
+		//落ちていかないよう、重力を切っておく
+		rb.useGravity = false;
+		//一定時間後にこのオブジェクトを削除する
+		StartCoroutine(DestroyThisObject());
+	}
+
+	//このオブジェクトを消すコルーチン
+	IEnumerator DestroyThisObject()
+	{
+		yield return new WaitForSeconds(5.0f);
+
+		Destroy(this.gameObject);
+	}
 }
