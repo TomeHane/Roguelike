@@ -12,6 +12,9 @@ public class PlayerController : MonoBehaviour
     //剣の当たり判定
     [SerializeField]
     GameObject hitPlayerSword;
+    //ゲームオーバー画面を表示するオブジェクト
+    [SerializeField]
+    GameObject gameOverController;
 
     //自オブジェクト
     Rigidbody rb;
@@ -42,10 +45,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     float runSpeed = 3.0f;
 
-    //ステータス
-    [SerializeField]
-    float maxHp = 100.0f;
-    float hp;
+    //HP(UI_hp.csで参照する)
+    public float maxHp = 100.0f;
+    [System.NonSerialized]
+    public float hp;
 
     //ダッシュフラグ
     bool isDash = false;
@@ -348,10 +351,10 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    //デバッグ用
-    /*private void OnGUI()
+    //死亡アニメーション終了時に呼び出す関数
+    void StartGameOverController()
     {
-        string label = $"フラグAttack01:{flagAttack01}\nフラグAttack02:{flagAttack02}";
-        GUI.Label(new Rect(50, 50, 200, 60), label);
-    }*/
+        //オブジェクトを起動する
+        gameOverController.SetActive(true);
+    }
 }
