@@ -21,9 +21,12 @@ public class PlayerController : MonoBehaviour
     Collider col;
     Animator animator;
 
+    //移動方向
+    Vector3 movingDirection;
     //移動する速度
     //rigidbody.velocityに直接代入する
-    Vector3 movingVelocity;
+    [System.NonSerialized]
+    public Vector3 movingVelocity;
 
     //最新のプレイヤーの座標
     Vector3 latestPos;
@@ -63,6 +66,18 @@ public class PlayerController : MonoBehaviour
     //死亡フラグ
     bool isDead = false;
 
+    //WarpCircleの中心へ向かうフラグ
+    [System.NonSerialized]
+    public bool isHeadingWarpPoint = false;
+    //ワープ中フラグ
+    [System.NonSerialized]
+    public bool isWarping = false;
+
+    //WarpCircleオブジェクト
+    //WarpCircle.cs生成時に値が代入される
+    [System.NonSerialized]
+    public GameObject warpCircle = null;
+
 
     private void Start()
     {
@@ -86,8 +101,6 @@ public class PlayerController : MonoBehaviour
     //"入力"の受け付けはUpdate()で行う
     void Update()
     {
-        //----------フラグチェック開始----------------------------------------
-
         //死亡フラグがオンならreturn;
         if (isDead)
         {
@@ -100,6 +113,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        
         //Attack01フラグが立っていて且つ、現在のステートがAttack01じゃなければ
         if (isAttack01 && !animator.GetCurrentAnimatorStateInfo(0).IsName("NormalAttack01_SwordShield"))
         {
@@ -124,39 +138,6 @@ public class PlayerController : MonoBehaviour
             hitPlayerSword.SetActive(false);
         }
 
-        //----------フラグチェック終了----------------------------------------
-
-
-        //----------入力受付開始----------------------------------------
-
-        //左Shift or mouse2(中ボタン)を押したら
-        if (Input.GetButtonDown("Fire3"))
-        {
-            //ダッシュフラグを切り替える
-            isDash = !isDash;
-        }
-
-        //左クリック or Enterを押したら
-        if (Input.GetButtonDown("Fire1"))
-        {
-            StartCoroutine(AttackAnimationFlow());
-        }
-
-        //----------入力受付終了----------------------------------------
-
-
-        //----------return処理開始----------------------------------------
-
-        //攻撃中なら
-        if (isAttack01 || isAttack02)
-        {
-            //速度ベクトルをゼロにしてreturn
-            movingVelocity = Vector3.zero;
-            return;
-        }
-
-        //----------return処理終了----------------------------------------
-
 
         //----------進行方向にキャラクターを向かせる処理・開始----------------------------------------
 
@@ -179,6 +160,50 @@ public class PlayerController : MonoBehaviour
         }
 
         //----------進行方向にキャラクターを向かせる処理・終了----------------------------------------
+
+
+        //WarpCircleの中心へ向かうフラグがオンなら
+        if (isHeadingWarpPoint)
+        {
+            HeadingWarpPoint();
+
+            //自動で移動させたいので、入力受付する前にreturn;
+            return;
+        }
+
+        //ワープ中フラグがオンなら
+        if (isWarping)
+        {
+            //ワープが終わるまで静止させたいのでreturn;
+            return;
+        }
+
+
+        //----------入力受付開始----------------------------------------
+
+        //左Shift or mouse2(中ボタン)を押したら
+        if (Input.GetButtonDown("Fire3"))
+        {
+            //ダッシュフラグを切り替える
+            isDash = !isDash;
+        }
+
+        //左クリック or Enterを押したら
+        if (Input.GetButtonDown("Fire1"))
+        {
+            StartCoroutine(AttackAnimationFlow());
+        }
+
+        //----------入力受付終了----------------------------------------
+
+
+        //攻撃中なら
+        if (isAttack01 || isAttack02)
+        {
+            //速度ベクトルをゼロにしてreturn
+            movingVelocity = Vector3.zero;
+            return;
+        }
 
 
         //----------移動処理（RigidBodyのvelocityに代入する速度(ベクトル)を求める処理）・開始----------------------------------------
@@ -215,7 +240,7 @@ public class PlayerController : MonoBehaviour
         Vector3 movingRight = cam.transform.right * x;
 
         //ベクトル合成
-        Vector3 movingDirection = movingForward + movingRight;
+        movingDirection = movingForward + movingRight;
         //宙に向かって移動しないように
         movingDirection.y = 0f;
 
@@ -276,6 +301,12 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        //ワープ系フラグがオンならreturn;
+        if (isHeadingWarpPoint || isWarping)
+        {
+            return;
+        }
+
         //無敵時間ではない且つ、EnemyWeaponに当たった場合
         if (!isInvincible && other.gameObject.tag == "EnemyWeapon")
         {
@@ -302,9 +333,6 @@ public class PlayerController : MonoBehaviour
 
             //プレイヤーにダメージを与える
             hp -= getDamage;
-
-            Debug.Log($"プレイヤーに{getDamage}ダメージ！");
-            Debug.Log($"残りHP：{hp}");
 
             //HPが0以下なら
             if (hp <= 0)
@@ -356,5 +384,47 @@ public class PlayerController : MonoBehaviour
     {
         //オブジェクトを起動する
         gameOverController.SetActive(true);
+    }
+
+
+    //WarpCircleの中心へ向かう関数
+    void HeadingWarpPoint()
+    {
+        //目的地を決める
+        Vector3 warpPoint = warpCircle.transform.position;
+        //移動方向を決める
+        //移動方向(矢印) = 目的地 - 現在地
+        movingDirection = warpPoint - transform.position;
+        //y方向への移動を0にしておく
+        movingDirection.y = 0f;
+        //ベクトルの長さが1になるように調節
+        movingDirection.Normalize();
+
+        //走らせる
+        moveSpeed = runSpeed;
+        animator.SetFloat("moveSpeed", moveSpeed);
+
+        //移動速度を決める
+        movingVelocity = movingDirection * speedMagnification * moveSpeed;
+
+        //WarpCircleとの距離が1.0f未満なら
+        if (Vector3.Distance(transform.position, warpPoint) < 1.0f)
+        {
+            WaitWarp();
+        }
+    }
+
+    //ワープ処理中、動きを止める関数
+    //UI_blackout.csでも使う
+    public void WaitWarp()
+    {
+        //フラグを"WarpCircleの中心へ向かう"→"ワープ中"に切り替え
+        isHeadingWarpPoint = false;
+        isWarping = true;
+
+        //プレイヤーを静止させる
+        moveSpeed = idleSpeed;
+        animator.SetFloat("moveSpeed", moveSpeed);
+        movingVelocity = Vector3.zero;
     }
 }

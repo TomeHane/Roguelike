@@ -21,7 +21,7 @@ public class SystemManager : MonoBehaviour
     int wall = 9;
     int road = 0;
 
-    //整理用
+    //整理用の空オブジェクト
     public Transform dungeon;
     //Wallオブジェクトをアタッチ
     public GameObject WallObject;
@@ -62,7 +62,8 @@ public class SystemManager : MonoBehaviour
         Enabled,
         Player,
         EnemySkeleton,
-        EnemyWizard
+        EnemyWizard,
+        WarpCircle
     }
 
     //マス目ごとにスポーン状況を入れていく
@@ -81,13 +82,22 @@ public class SystemManager : MonoBehaviour
     List<int> placedPointListY = new List<int>();
 
     //設置するオブジェクト
-    public GameObject playerObject;
+    GameObject playerObject;
     public GameObject enemySkeleton;
     public GameObject enemyWizard;
+    public GameObject warpCircle;
+
+    //到着したときのワープサークル
+    public GameObject warpCircleArrival;
+    //今、何階にいるかを確認する
+    GameController gameController;
 
 
     void Start()
     {
+        playerObject = GameObject.FindGameObjectWithTag("Player");
+        gameController = GameObject.FindGameObjectWithTag("GameController").GetComponent<GameController>();
+
         ResetMapData();
 
         CreateSpaceData();
@@ -418,6 +428,9 @@ public class SystemManager : MonoBehaviour
             DecideObjectPosition(SpownArea.EnemyWizard);
         }
 
+        //ワープサークルの設置位置を決定する
+        DecideObjectPosition(SpownArea.WarpCircle);
+
 
         //オブジェクトの設置
         for (int i = 0; i < placedPointListX.Count; i++)
@@ -429,7 +442,6 @@ public class SystemManager : MonoBehaviour
             if (spownAreas[y, x] == SpownArea.Player)
             {
                 playerObject.transform.position = new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2));
-                playerObject.SetActive(true);
             }
             //スケルトンエネミーの生成
             if (spownAreas[y, x] == SpownArea.EnemySkeleton)
@@ -441,6 +453,22 @@ public class SystemManager : MonoBehaviour
             {
                 Instantiate(enemyWizard, new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
             }
+            //ワープサークルの生成
+            if (spownAreas[y, x] == SpownArea.WarpCircle)
+            {
+                Instantiate(warpCircle, new Vector3(squareLength * (x - MapWidth / 2), 0.1f, squareLength * (y - MapHeight / 2)), Quaternion.identity);
+            }
+        }
+
+        //(地下)１階以外の場合
+        if (gameController.currentFloor > 1)
+        {
+            //プレイヤーの座標を代入
+            Vector3 arrivalPos = playerObject.transform.position;
+            //yの位置を調整
+            arrivalPos.y = 0.1f;
+            //到着したときのワープサークルを生成(再生)
+            Instantiate(warpCircleArrival, arrivalPos, Quaternion.identity);
         }
     }
 
