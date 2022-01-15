@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    //他オブジェクト
+    //子オブジェクト
     [SerializeField]
     Camera cam;
     [SerializeField]
@@ -12,6 +12,14 @@ public class PlayerController : MonoBehaviour
     //剣の当たり判定
     [SerializeField]
     GameObject hitPlayerSword;
+    //回復エフェクトを出す場所
+    [SerializeField]
+    Transform effectPoint;
+
+    //他オブジェクト
+    //回復エフェクト
+    [SerializeField]
+    GameObject healObject;
     //ゲームオーバー画面を表示するオブジェクト
     [SerializeField]
     GameObject gameOverController;
@@ -67,18 +75,22 @@ public class PlayerController : MonoBehaviour
     bool isDead = false;
 
     //WarpCircleの中心へ向かうフラグ
+    //WarpCircle.csで使用
     [System.NonSerialized]
     public bool isHeadingWarpPoint = false;
     //ワープ中フラグ
     [System.NonSerialized]
     public bool isWarping = false;
 
+    //接敵数
+    int collideEnemyCount = 0;
+
     //WarpCircleオブジェクト
     //WarpCircle.cs生成時に値が代入される
     [System.NonSerialized]
     public GameObject warpCircle = null;
 
-
+    
     private void Start()
     {
         //自オブジェクトのコンポーネントを、インスペクター上でアタッチすることはできないため
@@ -141,22 +153,25 @@ public class PlayerController : MonoBehaviour
 
         //----------進行方向にキャラクターを向かせる処理・開始----------------------------------------
 
-        //前回からどこに進んだかをベクトルで取得
-        Vector3 diff = avatar.transform.position - latestPos;
-        //前回のpositionを更新
-        latestPos = avatar.transform.position;
-
-        //ベクトルの大きさが0.01以上の時に向きを変える処理をする
-        //Vector3.magnitude:ベクトルの長さをfloat型で返す
-        if (diff.magnitude > 0.01f)
+        //敵にぶつかっていない又は、静止していない場合
+        if (collideEnemyCount <= 0 || moveSpeed != idleSpeed)
         {
-            //Quaternion.LookRotation()の引数は、Quaternion
-            Quaternion rot = Quaternion.LookRotation(diff);
-            //現在の向きと目標の向きとで、球面線形補間
-            rot = Quaternion.Slerp(avatar.transform.rotation, rot, 0.4f);
-            //向きを変える
-            avatar.transform.rotation = rot;
+            //前回からどこに進んだかをベクトルで取得
+            Vector3 diff = avatar.transform.position - latestPos;
+            //前回のpositionを更新
+            latestPos = avatar.transform.position;
 
+            //ベクトルの大きさが0.01以上の時に向きを変える処理をする
+            //Vector3.magnitude:ベクトルの長さをfloat型で返す
+            if (diff.magnitude > 0.01f)
+            {
+                //Quaternion.LookRotation()の引数は、Quaternion
+                Quaternion rot = Quaternion.LookRotation(diff);
+                //現在の向きと目標の向きとで、球面線形補間
+                rot = Quaternion.Slerp(avatar.transform.rotation, rot, 0.4f);
+                //向きを変える
+                avatar.transform.rotation = rot;
+            }
         }
 
         //----------進行方向にキャラクターを向かせる処理・終了----------------------------------------
@@ -200,7 +215,9 @@ public class PlayerController : MonoBehaviour
         //攻撃中なら
         if (isAttack01 || isAttack02)
         {
-            //速度ベクトルをゼロにしてreturn
+            //動きを止めてreturn
+            moveSpeed = idleSpeed;
+            animator.SetFloat("moveSpeed", moveSpeed);
             movingVelocity = Vector3.zero;
             return;
         }
@@ -307,10 +324,29 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        //ポーションに当たった場合
+        if (other.gameObject.tag == "Potion")
+        {
+            //回復処理
+            hp += 50.0f;
+            if (hp > maxHp)
+            {
+                hp = maxHp;
+            }
+
+            //ポーションオブジェクトを削除
+            Destroy(other.gameObject);
+
+            //回復エフェクトのオブジェクトを生成し、effectPointの子オブジェクトにする
+            Instantiate(healObject, effectPoint.position, Quaternion.identity).transform.parent = effectPoint;
+        }
+
         //無敵時間ではない且つ、EnemyWeaponに当たった場合
         if (!isInvincible && other.gameObject.tag == "EnemyWeapon")
         {
-            //速度ベクトルをゼロにして動きを止める
+            //動きを止める
+            moveSpeed = idleSpeed;
+            animator.SetFloat("moveSpeed", moveSpeed);
             movingVelocity = Vector3.zero;
 
             //当たったゲームオブジェクトの名前を取得
@@ -426,5 +462,29 @@ public class PlayerController : MonoBehaviour
         moveSpeed = idleSpeed;
         animator.SetFloat("moveSpeed", moveSpeed);
         movingVelocity = Vector3.zero;
+    }
+
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.tag == "Enemy")
+        {
+            collideEnemyCount++;
+        }
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.tag == "Enemy")
+        {
+            collideEnemyCount--;
+
+            //念のための処理
+            if (collideEnemyCount < 0)
+            {
+                Debug.Log("接敵数が負の数になりました。値を0で初期化します。");
+                collideEnemyCount = 0;
+            }
+        }
     }
 }

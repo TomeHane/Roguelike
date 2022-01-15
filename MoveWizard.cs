@@ -4,6 +4,10 @@ using UnityEngine;
 
 public class MoveWizard : MonoBehaviour
 {
+	//他オブジェクトをアタッチ
+	[SerializeField]
+	GameObject potion;
+
 	//自オブジェクトから取得
 	Rigidbody rb;
 	Collider col;
@@ -51,8 +55,10 @@ public class MoveWizard : MonoBehaviour
 	float attackRange = 10.0f;
 	//攻撃時の静止時間(秒)
 	[SerializeField]
-	float attackTime = 8.0f;
+	float attackTime = 6.0f;
 
+	//召喚酔いフラグ
+	bool isSummoningSickness = false;
 	//"Update()で一度だけ動く処理"を実現するためのフラグ
 	bool isOnceCalled = false;
 	//"追跡開始・終了時に一度だけ動く処理"を実現するためのフラグ
@@ -101,7 +107,21 @@ public class MoveWizard : MonoBehaviour
 		status = Status.Common;
 		//HPを初期化
 		hp = maxHp;
+
+		//召喚処理を行う
+		StartCoroutine(Summon());
 	}
+
+	//召喚(酔い)処理
+	IEnumerator Summon()
+	{
+		isSummoningSickness = true;
+
+		yield return new WaitForSeconds(6.0f);
+
+		isSummoningSickness = false;
+	}
+
 
 	void Update()
 	{
@@ -114,12 +134,16 @@ public class MoveWizard : MonoBehaviour
 			isOnceCalled = true;
 		}
 
+		//召喚酔い中ならreturn;
+		if (isSummoningSickness)
+		{
+			return;
+		}
 		//死亡フラグがオンならreturn;
 		if (isDead)
 		{
 			return;
 		}
-
 		//被ダメフラグがオンならreturn;
 		if (isGetHit)
 		{
@@ -331,6 +355,12 @@ public class MoveWizard : MonoBehaviour
 		//PlayerWeaponに当たった場合
 		if (other.gameObject.tag == "PlayerWeapon")
 		{
+			//召喚酔いを解除
+			if (isSummoningSickness)
+			{
+				isSummoningSickness = false;
+			}
+
 			//速度ベクトルをゼロにして動きを止める
 			velocity = Vector3.zero;
 
@@ -349,7 +379,7 @@ public class MoveWizard : MonoBehaviour
 					break;
 			}
 
-			//プレイヤーにダメージを与える
+			//ウィザードにダメージを与える
 			hp -= getDamage;
 
 			Debug.Log($"ウィザードに{getDamage}ダメージ！");
@@ -389,7 +419,17 @@ public class MoveWizard : MonoBehaviour
 	//このオブジェクトを消すコルーチン
 	IEnumerator DestroyThisObject()
 	{
-		yield return new WaitForSeconds(10.0f);
+		yield return new WaitForSeconds(4.0f);
+
+		//N%の確率でポーションを落とす
+		if (Random.Range(0f, 100.0f) <= 20)
+		{
+			Vector3 potionPos = transform.position;
+			potionPos.y = 0;
+			Instantiate(potion, potionPos, Quaternion.identity);
+		}
+
+		yield return new WaitForSeconds(6.0f);
 
 		Destroy(this.gameObject);
 	}

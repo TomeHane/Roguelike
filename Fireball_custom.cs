@@ -11,12 +11,12 @@ public class Fireball_custom : MonoBehaviour
     public GameObject explodeEffect;
 
     Rigidbody rb;
-    Collider collider;
+    Collider col;
 
     public void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        collider = GetComponent<Collider>();
+        col = GetComponent<Collider>();
     }
 
     //何かに衝突したら
@@ -43,7 +43,7 @@ public class Fireball_custom : MonoBehaviour
             }
 
             //多段ヒットしないように、コライダーコンポーネントを切っておく
-            collider.enabled = false;
+            col.enabled = false;
 
             //5秒後にこのオブジェクトを消す
             StartCoroutine(DestroyThisObject());

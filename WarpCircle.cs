@@ -32,7 +32,7 @@ public class WarpCircle : MonoBehaviour
     //一定時間後にリングの回転を一時停止させる
     IEnumerator PauseRingEffect()
     {
-        yield return new WaitForSeconds(3.0f);
+        yield return new WaitForSeconds(1.0f);
 
         ring.Pause();
     }
@@ -47,6 +47,10 @@ public class WarpCircle : MonoBehaviour
 
             //プレイヤー監視フラグを立てる
             isWatchingPlayer = true;
+
+            //15秒たってもワープしない場合、ここで立てたフラグを解除する
+            //∵つっかえたときの予防策
+            StartCoroutine(ClearFlag());
         }
     }
 
@@ -73,5 +77,18 @@ public class WarpCircle : MonoBehaviour
             //プレイヤー監視フラグを解除
             isWatchingPlayer = false;
         }
+    }
+
+
+    //フラグ解除コルーチン(保険用)
+    IEnumerator ClearFlag()
+    {
+        yield return new WaitForSeconds(15.0f);
+
+        //WarpCircleの中心へ向かうフラグを解除する
+        playerController.isHeadingWarpPoint = false;
+
+        //プレイヤー監視フラグを解除する
+        isWatchingPlayer = false;
     }
 }

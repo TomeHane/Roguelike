@@ -11,14 +11,13 @@ public class GameOverController : MonoBehaviour
 
     //「GameOver」の各文字の配列
     public GameObject[] chars;
+
     //「タイトルへ」ボタンと「ゲームを終了する」ボタン
-    //コンポーネントもここでアタッチする
-    public GameObject toTitleObject;
+    //コンポーネントをここでアタッチする
     public Image toTitleButtonImage;
     public Image toTitleLogoImage;
     public Button toTitleButton;
 
-    public GameObject exitObject;
     public Image exitButtonImage;
     public Image exitLogoImage;
     public Button exitButton;
@@ -29,7 +28,6 @@ public class GameOverController : MonoBehaviour
     public float opacifySpeed = 160.0f;
     //ボタンが表示され始めるまでの秒数
     public float waitButtonSeconds = 5.0f;
-
 
     //BGM関係
     /*public AudioSource bgm;
@@ -146,26 +144,5 @@ public class GameOverController : MonoBehaviour
             button.enabled = true;
         }
 
-    }
-
-
-    //「タイトルへ」ボタンが押されたときの処理
-    public void LoadTitle()
-    {
-        Debug.Log("タイトルへ戻ります");
-
-        //DontDestroyオブジェクトを残削除する処理
-
-        /*SceneManager.LoadScene("Title");*/
-    }
-
-    //「ゲームを終了する」ボタンが押されたときの処理
-    public void ExitGame()
-    {
-        #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-        #elif UNITY_STANDALONE
-        UnityEngine.Application.Quit();
-        #endif
     }
 }

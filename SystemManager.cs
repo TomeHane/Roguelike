@@ -27,6 +27,8 @@ public class SystemManager : MonoBehaviour
     public GameObject WallObject;
     //床オブジェクトをアタッチ
     public GameObject groundObject;
+    //天井オブジェクトをアタッチ
+    public GameObject CeilingObject;
     //壁・床の一辺の長さを入れる
     public int squareLength;
 
@@ -63,7 +65,9 @@ public class SystemManager : MonoBehaviour
         Player,
         EnemySkeleton,
         EnemyWizard,
-        WarpCircle
+        WarpCircle,
+        Potion,
+        CollideFigurine
     }
 
     //マス目ごとにスポーン状況を入れていく
@@ -85,10 +89,18 @@ public class SystemManager : MonoBehaviour
     GameObject playerObject;
     public GameObject enemySkeleton;
     public GameObject enemyWizard;
+    //次シーンに遷移するワープサークル
     public GameObject warpCircle;
-
     //到着したときのワープサークル
     public GameObject warpCircleArrival;
+    //回復ポーション
+    public GameObject potion;
+
+    //コライダーなしの置物(スポーン状況は変えなくてOK)
+    public List<GameObject> figurines;
+    //コライダーありの置物(スポーン状況も変える)
+    public List<GameObject> CollideFigurines;
+
     //今、何階にいるかを確認する
     GameController gameController;
 
@@ -343,13 +355,28 @@ public class SystemManager : MonoBehaviour
                 {
                     //マップサイズが50 * 50の場合、2500個のオブジェクトを生成する
                     //【Wallの一辺の長さ】mずつ配置されていく。
+                    GameObject cloneWall = Instantiate(WallObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
                     //整理するために、Instantiate()で生成したオブジェクトの親をdungeonに設定している
-                    Instantiate(WallObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity).transform.parent = dungeon;
+                    cloneWall.transform.parent = dungeon;
                 }
                 //Map[i, j]がroadなら
                 else
                 {
-                    Instantiate(groundObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity).transform.parent = dungeon;
+                    //床オブジェクト
+                    GameObject cloneGround = Instantiate(groundObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
+                    cloneGround.transform.parent = dungeon;
+                    //天井オブジェクト
+                    GameObject cloneCeiling = Instantiate(CeilingObject, new Vector3(squareLength * (j - MapWidth / 2), 0, squareLength * (i - MapHeight / 2)), Quaternion.identity);
+                    cloneCeiling.transform.parent = dungeon;
+
+                    //N%の確率で
+                    if (Random.Range(0f,100.0f) <= 3)
+                    {
+                        //ランダムな(コライダーなしの)置物オブジェクトを生成する
+                        int indexF = Random.Range(0, figurines.Count);
+                        GameObject cloneFigurine = Instantiate(figurines[indexF], cloneGround.transform.position, Quaternion.identity);
+                        cloneFigurine.transform.parent = dungeon;
+                    }
                 }
             }
         }
@@ -421,7 +448,7 @@ public class SystemManager : MonoBehaviour
         }
 
         //ウィザードエネミー数を決定する
-        int enemyWizardNum = Random.Range(1, 4);
+        int enemyWizardNum = Random.Range(2, 5);
         for (int i = 0; i < enemyWizardNum; i++)
         {
             //ウィザードエネミーの設置位置を決定する
@@ -430,6 +457,22 @@ public class SystemManager : MonoBehaviour
 
         //ワープサークルの設置位置を決定する
         DecideObjectPosition(SpownArea.WarpCircle);
+
+        //ポーションの数を決定する
+        int potionNum = Random.Range(0, 3);
+        for (int i = 0; i < potionNum; i++)
+        {
+            //ポーションの設置位置を決定する
+            DecideObjectPosition(SpownArea.Potion);
+        }
+
+        //コライダー付き置物の数を決定する
+        int figurinesNum = Random.Range(4, 7);
+        for (int i = 0; i < figurinesNum; i++)
+        {
+            //コライダー付き置物の設置位置を決定する
+            DecideObjectPosition(SpownArea.CollideFigurine);
+        }
 
 
         //オブジェクトの設置
@@ -457,6 +500,19 @@ public class SystemManager : MonoBehaviour
             if (spownAreas[y, x] == SpownArea.WarpCircle)
             {
                 Instantiate(warpCircle, new Vector3(squareLength * (x - MapWidth / 2), 0.1f, squareLength * (y - MapHeight / 2)), Quaternion.identity);
+            }
+            //ポーションの生成
+            if (spownAreas[y, x] == SpownArea.Potion)
+            {
+                Instantiate(potion, new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
+            }
+            //コライダー付き置物の生成
+            if (spownAreas[y,x] == SpownArea.CollideFigurine)
+            {
+                //リスト内のオブジェクトをランダムで選ぶ
+                int indexCF = Random.Range(0, CollideFigurines.Count);
+
+                Instantiate(CollideFigurines[indexCF], new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
             }
         }
 

@@ -7,6 +7,9 @@ public class MoveEnemy : MonoBehaviour
 	//子オブジェクトをアタッチ
 	[SerializeField]
 	GameObject hitEnemySword;
+	//他オブジェクトをアタッチ
+	[SerializeField]
+	GameObject potion;
 
 	//自オブジェクトから取得
 	Rigidbody rb;
@@ -58,7 +61,7 @@ public class MoveEnemy : MonoBehaviour
 	float attackRange = 2.0f;
 	//攻撃時の静止時間(秒)
 	[SerializeField]
-	float attackTime = 8.0f;
+	float attackTime = 4.0f;
 
 	//攻撃に移るまでの最大時間(プレイヤーに向かって走り続ける最大時間)
 	[SerializeField]
@@ -66,6 +69,8 @@ public class MoveEnemy : MonoBehaviour
 	//走り続けている時間
 	float currentRunningTime = 0f;
 
+	//召喚酔いフラグ
+	bool isSummoningSickness = false;
 	//"Update()で一度だけ動く処理"を実現するためのフラグ
 	bool isOnceCalled = false;
 	//"追跡開始・終了時に一度だけ動く処理"を実現するためのフラグ
@@ -126,7 +131,21 @@ public class MoveEnemy : MonoBehaviour
 		status = Status.Common;
 		//HPを初期化
 		hp = maxHp;
+
+		//召喚処理を行う
+		StartCoroutine(Summon());
 	}
+
+	//召喚(酔い)処理
+	IEnumerator Summon()
+    {
+		isSummoningSickness = true;
+
+		yield return new WaitForSeconds(6.0f);
+
+		isSummoningSickness = false;
+    }
+
 
 	void Update()
 	{
@@ -139,12 +158,16 @@ public class MoveEnemy : MonoBehaviour
 			isOnceCalled = true;
 		}
 
+        //召喚酔い中ならreturn;
+        if (isSummoningSickness)
+        {
+			return;
+        }
 		//死亡フラグがオンならreturn;
 		if (isDead)
 		{
 			return;
 		}
-
 		//被ダメフラグがオンならreturn;
 		if (isGetHit)
 		{
@@ -230,15 +253,10 @@ public class MoveEnemy : MonoBehaviour
 			DecideVelocity(player.transform.position, runSpeed);
 
 			//攻撃範囲に入った又は、一定時間以上走り続けていた場合
-			if (Vector3.Distance(transform.position, player.transform.position) < attackRange 
-				|| currentRunningTime >= maxRunningTime)
+			//且つ、攻撃助走中ではない場合
+			if ((Vector3.Distance(transform.position, player.transform.position) < attackRange || currentRunningTime >= maxRunningTime) 
+				&& !isRunUp)
             {
-				//攻撃助走中なら処理を中断
-                if (isRunUp)
-                {
-					return;
-                }
-
 				//攻撃フラグを立てる
 				isAttacking = true;
 
@@ -387,6 +405,12 @@ public class MoveEnemy : MonoBehaviour
 		//PlayerWeaponに当たった場合
 		if (other.gameObject.tag == "PlayerWeapon")
 		{
+            //召喚酔いを解除
+            if (isSummoningSickness)
+            {
+				isSummoningSickness = false;
+            }
+
 			//速度ベクトルをゼロにして動きを止める
 			velocity = Vector3.zero;
 
@@ -405,7 +429,7 @@ public class MoveEnemy : MonoBehaviour
 					break;
 			}
 
-			//プレイヤーにダメージを与える
+			//スケルトンにダメージを与える
 			hp -= getDamage;
 
 			Debug.Log($"スケルトンに{getDamage}ダメージ！");
@@ -473,6 +497,14 @@ public class MoveEnemy : MonoBehaviour
 		rb.useGravity = false;
 		//一定時間後にこのオブジェクトを削除する
 		StartCoroutine(DestroyThisObject());
+
+		//N%の確率でポーションを落とす
+		if (Random.Range(0f, 100.0f) <= 15)
+		{
+			Vector3 potionPos = transform.position;
+			potionPos.y = 0;
+			Instantiate(potion, potionPos, Quaternion.identity);
+		}
 	}
 
 	//このオブジェクトを消すコルーチン

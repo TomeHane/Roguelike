@@ -21,13 +21,6 @@ public class DontDestroyManager : MonoBehaviour
     //このオブジェクトを含む、DontDestroyOnLoadオブジェクトをまとめて削除する関数
     public void DestroyAll()
     {
-
-
-        //デバッグ
-        Debug.Log("オブジェクトを削除");
-
-
-
         foreach (GameObject obj in DontDestroyList)
         {
             Destroy(obj);
