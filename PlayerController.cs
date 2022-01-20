@@ -28,8 +28,11 @@ public class PlayerController : MonoBehaviour
     MusicPlayer musicPlayer;
 
     //自オブジェクト
+    [SerializeField]
     Rigidbody rb;
+    [SerializeField]
     Collider col;
+    [SerializeField]
     Animator animator;
 
     //移動方向
@@ -85,6 +88,9 @@ public class PlayerController : MonoBehaviour
     [System.NonSerialized]
     public bool isWarping = false;
 
+    //最初のワープフラグ
+    bool isFirstWarp = false;
+
     //接敵数
     int collideEnemyCount = 0;
 
@@ -96,11 +102,6 @@ public class PlayerController : MonoBehaviour
     
     private void Start()
     {
-        //自オブジェクトのコンポーネントを、インスペクター上でアタッチすることはできないため
-        rb = GetComponent<Rigidbody>();
-        col = GetComponent<Collider>();
-        animator = GetComponent<Animator>();
-
         //moveSpeedを初期化
         moveSpeed = idleSpeed;
         animator.SetFloat("moveSpeed", moveSpeed);
@@ -161,6 +162,8 @@ public class PlayerController : MonoBehaviour
         {
             //前回からどこに進んだかをベクトルで取得
             Vector3 diff = avatar.transform.position - latestPos;
+            //x,z軸の回転量をゼロにするために
+            diff.y = 0f;
             //前回のpositionを更新
             latestPos = avatar.transform.position;
 
@@ -475,7 +478,15 @@ public class PlayerController : MonoBehaviour
         movingVelocity = Vector3.zero;
 
         //ワープSEを鳴らす
-        StartCoroutine(PlayWarpSounds());
+        //※１度目（１フロア目）だけ鳴らさない
+        if (!isFirstWarp)
+        {
+            isFirstWarp = true;
+        }
+        else
+        {
+            StartCoroutine(PlayWarpSounds());
+        }
     }
 
     //ワープSEを鳴らすコルーチン

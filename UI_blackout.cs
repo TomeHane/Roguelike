@@ -14,13 +14,23 @@ public class UI_blackout : MonoBehaviour
     [SerializeField]
     Image image;
 
+    //Update()で一度だけ処理を行うためのフラグ
+    bool isCalledOnce = false;
 
-    private void Start()
+
+    private void Update()
     {
-        //プレイヤーの動きを止める
-        PlayerController.WaitWarp();
+        //一度だけ行う処理
+        //他スクリプトの関数を使うためUpdate()に記述
+        if (!isCalledOnce)
+        {
+            isCalledOnce = true;
 
-        StartCoroutine(Fadein());
+            //プレイヤーの動きを止める
+            PlayerController.WaitWarp();
+            //画面を少しずつ暗転させる
+            StartCoroutine(Fadein());
+        }
     }
 
 

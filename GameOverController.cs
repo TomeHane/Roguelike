@@ -33,14 +33,14 @@ public class GameOverController : MonoBehaviour
     [SerializeField]
     MusicPlayer musicPlayer;
 
+    //Update()で一度だけ処理を行うためのフラグ
+    bool isCalledOnce = false;
+
 
     void Start()
     {
         //親オブジェクトを有効にする
         parent.SetActive(true);
-
-        //BGMを変更
-        musicPlayer.PlayBGM(MusicPlayer.BgmName.GameOver, 1.0f);
 
         //文字数分、繰り返す
         for (int i = 0; i < chars.Length; i++)
@@ -57,6 +57,19 @@ public class GameOverController : MonoBehaviour
         
         //ボタン表示コルーチンを開始する
         StartCoroutine(DisplayButton());
+    }
+
+    private void Update()
+    {
+        //一度だけ行う処理
+        if (!isCalledOnce)
+        {
+            isCalledOnce = true;
+
+            //BGMを変更
+            //他スクリプトの関数を使うためUpdate()に記述
+            musicPlayer.PlayBGM(MusicPlayer.BgmName.GameOver, 1.0f);
+        }
     }
 
 

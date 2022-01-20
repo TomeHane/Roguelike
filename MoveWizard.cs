@@ -8,11 +8,12 @@ public class MoveWizard : MonoBehaviour
 	[SerializeField]
 	GameObject potion;
 
-	//自オブジェクトから取得
+	//自オブジェクトからアタッチ
+	[SerializeField]
 	Rigidbody rb;
+	[SerializeField]
 	Collider col;
 	//SearchArea.csで使用
-	[System.NonSerialized]
 	public Animator animator;
 
 	//他オブジェクトからタグで検索して取得
@@ -21,13 +22,13 @@ public class MoveWizard : MonoBehaviour
 	SystemManager systemManager;
 
 	//最新のモンスターの座標
-	Vector3 latestPos;
+	Vector3 _latestPos;
 	//目的地
 	Vector3 _destination;
 	//移動方向
-	Vector3 direction;
+	Vector3 _direction;
 	//移動速度
-	Vector3 velocity;
+	Vector3 _velocity;
 
 	//全体の速度倍率
 	[SerializeField]
@@ -121,11 +122,6 @@ public class MoveWizard : MonoBehaviour
 
 	void Start()
 	{
-		//自オブジェクトから取得
-		animator = GetComponent<Animator>();
-		rb = GetComponent<Rigidbody>();
-		col = GetComponent<Collider>();
-
 		//他オブジェクトから取得
 		player = GameObject.FindGameObjectWithTag("Player");
 
@@ -229,7 +225,7 @@ public class MoveWizard : MonoBehaviour
 				//到着フラグを立てる
 				isArrived = true;
 				//動きを止める
-				velocity = Vector3.zero;
+				_velocity = Vector3.zero;
 				moveSpeed = idleSpeed;
 				animator.SetFloat(PARAMETER_MOVESPEED, moveSpeed);
 
@@ -257,12 +253,19 @@ public class MoveWizard : MonoBehaviour
 			{
 				//攻撃フラグを立てる
 				isAttacking = true;
-
-				//プレイヤーの方を向く
-				transform.LookAt(player.transform);
+				
+				//プレイヤーの方を向く処理
+				//プレイヤーへの矢印(ベクトル)を計算
+				Vector3 direction = player.transform.position - transform.position;
+				//x,z軸の回転量をゼロにするために
+				direction.y = 0f;
+				//プレイヤーの方に向くための角度を取得
+				Quaternion rot = Quaternion.LookRotation(direction);
+				//向きを変える
+				transform.rotation = rot;
 
 				//動きを止める
-				velocity = Vector3.zero;
+				_velocity = Vector3.zero;
 				moveSpeed = idleSpeed;
 				animator.SetFloat(PARAMETER_MOVESPEED, moveSpeed);
 
@@ -279,7 +282,7 @@ public class MoveWizard : MonoBehaviour
 	private void FixedUpdate()
 	{
 		//移動させる
-		rb.velocity = velocity;
+		rb.velocity = _velocity;
 	}
 
 
@@ -287,9 +290,11 @@ public class MoveWizard : MonoBehaviour
 	void ChangeRotation()
 	{
 		//進んでいる方向をベクトルで取得
-		Vector3 diff = transform.position - latestPos;
+		Vector3 diff = transform.position - _latestPos;
+		//x,z軸の回転量をゼロにするために
+		diff.y = 0f;
 		//前回のpositionを更新
-		latestPos = transform.position;
+		_latestPos = transform.position;
 
 		//ベクトルの大きさが0.01以上なら
 		if (diff.magnitude > 0.01f)
@@ -309,11 +314,11 @@ public class MoveWizard : MonoBehaviour
 	{
 		//移動方向を決める
 		//移動方向(矢印) = 目的地 - 現在地
-		direction = destination - transform.position;
+		_direction = destination - transform.position;
 		//y方向への移動を0にしておく
-		direction.y = 0f;
+		_direction.y = 0f;
 		//ベクトルの長さが1になるように調節
-		direction.Normalize();
+		_direction.Normalize();
 
 		//moveSpeedを決める
 		moveSpeed = anySpeed;
@@ -321,7 +326,7 @@ public class MoveWizard : MonoBehaviour
 		animator.SetFloat(PARAMETER_MOVESPEED, moveSpeed);
 
 		//移動速度を決める
-		velocity = direction * speedMagnification * moveSpeed;
+		_velocity = _direction * speedMagnification * moveSpeed;
 	}
 
 
@@ -402,7 +407,7 @@ public class MoveWizard : MonoBehaviour
 			}
 
 			//速度ベクトルをゼロにして動きを止める
-			velocity = Vector3.zero;
+			_velocity = Vector3.zero;
 
 			//当たったゲームオブジェクトの名前を取得
 			string weaponName = other.gameObject.name;

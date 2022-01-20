@@ -10,7 +10,10 @@ public class Fireball_custom : MonoBehaviour
     public GameObject smokeEffect;
     public GameObject explodeEffect;
 
+    //rbとcolは予めアタッチしておく
+    [SerializeField]
     Rigidbody rb;
+    [SerializeField]
     Collider col;
 
     //Fireball自身にAudioSourceを持たせる
@@ -21,12 +24,7 @@ public class Fireball_custom : MonoBehaviour
     [SerializeField]
     AudioClip se_explosion;
 
-    public void Awake()
-    {
-        rb = GetComponent<Rigidbody>();
-        col = GetComponent<Collider>();
-    }
-
+    
     //何かに衝突したら
     private void OnTriggerEnter(Collider other)
     {

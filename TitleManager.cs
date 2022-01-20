@@ -18,10 +18,21 @@ public class TitleManager : MonoBehaviour
 
     State state = State.None;
 
-    private void Start()
+    //Update()で一度だけ処理を行うためのフラグ
+    bool isCalledOnce = false;
+
+
+    private void Update()
     {
-        //BGMを指定して鳴らす
-        musicPlayer.PlayBGM(MusicPlayer.BgmName.Title);
+        //一度だけ行う処理
+        if (!isCalledOnce)
+        {
+            isCalledOnce = true;
+
+            //BGMを指定して鳴らす
+            //他スクリプトの関数を使うためUpdate()に記述
+            musicPlayer.PlayBGM(MusicPlayer.BgmName.Title);
+        }
     }
 
     public void StartGame()

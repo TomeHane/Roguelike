@@ -68,6 +68,9 @@ public class GameController : MonoBehaviour
 
     State state = State.None;
 
+    //Update()で一度だけ処理を行うためのフラグ
+    bool isCalledOnce = false;
+
 
     private void Start()
     {
@@ -76,14 +79,22 @@ public class GameController : MonoBehaviour
 
         //階数表示を初期化
         floorText.text = $"B{currentFloor}F";
-
-        //上層のBGMを鳴らす
-        StartCoroutine(ReserveNextBGM(MusicPlayer.BgmName.Dungeon01));
     }
 
 
     private void Update()
     {
+        //一度だけ行う処理
+        if (!isCalledOnce)
+        {
+            isCalledOnce = true;
+
+            //上層のBGMを鳴らす
+            //他スクリプトの関数を使うためUpdate()に記述
+            StartCoroutine(ReserveNextBGM(MusicPlayer.BgmName.Dungeon01));
+        }
+
+        //ESCキーが押されたら
         if (Input.GetButton("Cancel"))
         {
             Quit();

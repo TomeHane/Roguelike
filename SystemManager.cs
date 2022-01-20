@@ -104,6 +104,9 @@ public class SystemManager : MonoBehaviour
     //今、何階にいるかを確認する
     GameController gameController;
 
+    //Update()で一度だけ処理を行うためのフラグ
+    bool isCalledOnce = false;
+
 
     void Start()
     {
@@ -120,6 +123,28 @@ public class SystemManager : MonoBehaviour
 
         PlacedObjects();
     }
+
+    private void Update()
+    {
+        //一度だけ行う処理
+        if (!isCalledOnce)
+        {
+            isCalledOnce = true;
+
+            //(地下)１階以外の場合
+            //他スクリプトのフィールドの値を参照するためUpdate()に記述
+            if (gameController.currentFloor > 1)
+            {
+                //プレイヤーの座標を代入
+                Vector3 arrivalPos = playerObject.transform.position;
+                //yの位置を調整
+                arrivalPos.y = 0.1f;
+                //到着したときのワープサークルを生成(再生)
+                Instantiate(warpCircleArrival, arrivalPos, Quaternion.identity);
+            }
+        }
+    }
+
 
     //Mapの二次元配列の初期化
     //spownAreasの二次元配列の初期化
@@ -514,17 +539,6 @@ public class SystemManager : MonoBehaviour
 
                 Instantiate(CollideFigurines[indexCF], new Vector3(squareLength * (x - MapWidth / 2), 0, squareLength * (y - MapHeight / 2)), Quaternion.identity);
             }
-        }
-
-        //(地下)１階以外の場合
-        if (gameController.currentFloor > 1)
-        {
-            //プレイヤーの座標を代入
-            Vector3 arrivalPos = playerObject.transform.position;
-            //yの位置を調整
-            arrivalPos.y = 0.1f;
-            //到着したときのワープサークルを生成(再生)
-            Instantiate(warpCircleArrival, arrivalPos, Quaternion.identity);
         }
     }
 

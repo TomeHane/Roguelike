@@ -11,11 +11,12 @@ public class MoveEnemy : MonoBehaviour
 	[SerializeField]
 	GameObject potion;
 
-	//自オブジェクトから取得
+	//自オブジェクトからアタッチ
+	[SerializeField]
 	Rigidbody rb;
+	[SerializeField]
 	Collider col;
 	//SearchArea.csで使用
-	[System.NonSerialized]
 	public Animator animator;
 
 	//他オブジェクトからタグで検索して取得
@@ -133,11 +134,6 @@ public class MoveEnemy : MonoBehaviour
 
     void Start()
 	{
-		//自オブジェクトから取得
-		animator = GetComponent<Animator>();
-		rb = GetComponent<Rigidbody>();
-		col = GetComponent<Collider>();
-
 		//他オブジェクトから取得
 		player = GameObject.FindGameObjectWithTag("Player");
 
@@ -146,7 +142,6 @@ public class MoveEnemy : MonoBehaviour
         {
 			systemManager = GameObject.FindGameObjectWithTag("SystemManager").GetComponent<SystemManager>();
 		}
-		
 
 		//Overlookingの再生時間を取得する
 		RuntimeAnimatorController rac = animator.runtimeAnimatorController;
@@ -331,6 +326,8 @@ public class MoveEnemy : MonoBehaviour
     {
 		//進んでいる方向をベクトルで取得
 		Vector3 diff = transform.position - latestPos;
+		//x,z軸の回転量をゼロにするために
+		diff.y = 0f;
 		//前回のpositionを更新
 		latestPos = transform.position;
 

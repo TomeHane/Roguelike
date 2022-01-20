@@ -5,10 +5,18 @@ using UnityEngine.SceneManagement;
 
 public class CreateObjectsManager : MonoBehaviour
 {
+    int frameCount = 0;
+
     //CreateObjects→Mazeにシーン遷移するだけ
-    //Start()が全て動ききった後に実行したいからUpdate()を使用
+    //Start()とUpdate()の１フレーム目が全て動ききった後に実行
     void Update()
     {
-        SceneManager.LoadScene("Maze");
+        frameCount++;
+
+        //2フレーム目なら
+        if (frameCount == 2)
+        {
+            SceneManager.LoadScene("Maze");
+        }
     }
 }
