@@ -13,8 +13,11 @@ public class VCameraController : MonoBehaviour
     CinemachineOrbitalTransposer transposer;
 
     //Bias値、FollowOffset値を覚えさせる変数
-    float bias;
-    float fllowOffsetY;
+    //GameController.csで参照する
+    [System.NonSerialized]
+    public float bias;
+    [System.NonSerialized]
+    public float fllowOffsetY;
 
     //回転速度
     [SerializeField]

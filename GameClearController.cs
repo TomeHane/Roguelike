@@ -5,6 +5,9 @@ using UnityEngine.UI;
 
 public class GameClearController : MonoBehaviour
 {
+    //オブジェクトをまとめる親オブジェクト
+    public GameObject parent;
+
     //文字
     [SerializeField]
     List<Animator> charAnimators;
@@ -29,9 +32,15 @@ public class GameClearController : MonoBehaviour
     public Image exitLogoImage;
     public Button exitButton;
 
+    //星エフェクトが空か
+    bool isEmpty;
+
 
     void Start()
     {
+        //親オブジェクトを有効にする
+        parent.SetActive(true);
+
         //文字数分コルーチンを飛ばす
         for (int i = 0; i < charAnimators.Count; i++)
         {
@@ -46,6 +55,9 @@ public class GameClearController : MonoBehaviour
         //「ゲームを終了する」オブジェクトを少しずつ不透明にする
         StartCoroutine(OpacifyImage(exitButtonImage, 200.0f, exitButton));
         StartCoroutine(OpacifyImage(exitLogoImage, 255.0f));
+
+        //20秒後に星エフェクトを打ち止めにする
+        StartCoroutine(StopStar());
     }
 
 
@@ -58,6 +70,12 @@ public class GameClearController : MonoBehaviour
         {
             //秒数をリセット
             currentTime = 0f;
+
+            //打ち止めならreturn;
+            if (isEmpty)
+            {
+                return;
+            }
 
             //星エフェクトを生成する
             GameObject cloneEffect = Instantiate(starEffect, Vector3.zero, Quaternion.identity);
@@ -130,5 +148,14 @@ public class GameClearController : MonoBehaviour
             button.enabled = true;
         }
 
+    }
+
+
+    //星を打ち止めにするコルーチン
+    IEnumerator StopStar()
+    {
+        yield return new WaitForSeconds(20.0f);
+
+        isEmpty = true;
     }
 }

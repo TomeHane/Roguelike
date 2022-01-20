@@ -5,8 +5,16 @@ using UnityEngine.VFX;
 
 public class Slash_enemy : MonoBehaviour
 {
-    public VisualEffect effect;
-    public GameObject hitEnemySword;
+    [SerializeField]
+    VisualEffect effect;
+    [SerializeField]
+    GameObject hitEnemySword;
+
+    //Œ•‚ÉAudioSource‚ğ‚½‚¹‚é
+    [SerializeField]
+    AudioSource slashSource;
+    [SerializeField]
+    AudioClip se_enemySlash;
 
     void Slash()
     {
@@ -22,4 +30,10 @@ public class Slash_enemy : MonoBehaviour
         hitEnemySword.SetActive(false);
     }
 
+    //Œ•‚ğU‚é‰¹‚ğ–Â‚ç‚·
+    void PlaySlashSound()
+    {
+        slashSource.clip = se_enemySlash;
+        slashSource.Play();
+    }
 }

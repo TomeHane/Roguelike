@@ -30,8 +30,8 @@ public class GameOverController : MonoBehaviour
     public float waitButtonSeconds = 5.0f;
 
     //BGM関係
-    /*public AudioSource bgm;
-    public AudioClip gameOverBGM;*/
+    [SerializeField]
+    MusicPlayer musicPlayer;
 
 
     void Start()
@@ -39,11 +39,8 @@ public class GameOverController : MonoBehaviour
         //親オブジェクトを有効にする
         parent.SetActive(true);
 
-        //BGMを変更し、ループ再生
-       /* bgm.clip = gameOverBGM;
-        bgm.loop = true;
-        bgm.volume = 1f;
-        bgm.Play();*/
+        //BGMを変更
+        musicPlayer.PlayBGM(MusicPlayer.BgmName.GameOver, 1.0f);
 
         //文字数分、繰り返す
         for (int i = 0; i < chars.Length; i++)

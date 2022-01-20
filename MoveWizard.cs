@@ -74,7 +74,7 @@ public class MoveWizard : MonoBehaviour
 	//被ダメフラグ
 	bool isGetHit = false;
 	//死亡フラグ
-	bool isDead = false;
+	bool _isDead = false;
 
 	//モンスターの状態。Commonが通常時で、Chaseが追跡時を表す。
 	public enum Status
@@ -82,15 +82,42 @@ public class MoveWizard : MonoBehaviour
 		Common,
 		Chase
 	}
-
 	//SearchArea.csで使用
 	[System.NonSerialized]
 	public Status status;
+
+	//モンスターの種類
+	public enum Species
+	{
+		Lower,
+		Boss
+	}
+	[SerializeField]
+	Species species = Species.Lower;
 
 	//HP
 	[SerializeField]
 	float maxHp = 60.0f;
 	float hp;
+
+	//アイテムドロップ率(%)
+	[SerializeField]
+	float dropRate = 20.0f;
+
+	//AudioSource
+	[SerializeField]
+	AudioSource audioSource;
+	//AudioClip
+	[SerializeField]
+	AudioClip se_enemyHit1;
+	[SerializeField]
+	AudioClip se_enemyHit2;
+	[SerializeField]
+	AudioClip se_wizardDead;
+
+	//フィールドのカプセル化
+	public bool IsDead { get => _isDead; set => _isDead = value; }
+
 
 	void Start()
 	{
@@ -101,7 +128,12 @@ public class MoveWizard : MonoBehaviour
 
 		//他オブジェクトから取得
 		player = GameObject.FindGameObjectWithTag("Player");
-		systemManager = GameObject.FindGameObjectWithTag("SystemManager").GetComponent<SystemManager>();
+
+		//Boss部屋にSystemManagerはないため
+		if (species != Species.Boss)
+		{
+			systemManager = GameObject.FindGameObjectWithTag("SystemManager").GetComponent<SystemManager>();
+		}
 
 		//ステータスを"通常時"で初期化
 		status = Status.Common;
@@ -140,7 +172,7 @@ public class MoveWizard : MonoBehaviour
 			return;
 		}
 		//死亡フラグがオンならreturn;
-		if (isDead)
+		if (_isDead)
 		{
 			return;
 		}
@@ -297,6 +329,14 @@ public class MoveWizard : MonoBehaviour
 	//Sensor.csからも参照する
 	public void DecideDestination()
 	{
+		//Bossエネミーの場合
+		if (species == Species.Boss)
+		{
+			//プレイヤーの座標を目的地とし、return;する
+			_destination = player.transform.position;
+			return;
+		}
+
 		for (int i = 0; i < 10; i++)
 		{
 			//目的地をスポーン可能エリアからランダムに設定
@@ -347,7 +387,7 @@ public class MoveWizard : MonoBehaviour
 	private void OnTriggerEnter(Collider other)
 	{
 		//死亡フラグがオンならreturn;
-		if (isDead)
+		if (_isDead)
 		{
 			return;
 		}
@@ -374,6 +414,18 @@ public class MoveWizard : MonoBehaviour
 			{
 				case "HitPlayerSword":
 					getDamage = 10.0f;
+
+					AudioClip damageSound = se_enemyHit1;
+					//20%の確率で
+					if (Random.Range(0f, 100.0f) <= 20)
+					{
+						damageSound = se_enemyHit2;
+					}
+					//被ダメSEを鳴らす
+					audioSource.clip = damageSound;
+					audioSource.volume = 0.5f;
+					audioSource.Play();
+
 					break;
 				default:
 					break;
@@ -382,13 +434,15 @@ public class MoveWizard : MonoBehaviour
 			//ウィザードにダメージを与える
 			hp -= getDamage;
 
-			Debug.Log($"ウィザードに{getDamage}ダメージ！");
-			Debug.Log($"ウィザードの残りHP：{hp}");
-
 			//HPが0以下なら
 			if (hp <= 0)
 			{
 				animator.SetBool("isDead", true);
+
+				//断末魔を鳴らす
+				audioSource.clip = se_wizardDead;
+				audioSource.volume = 1.0f;
+				audioSource.Play();
 
 				//他オブジェクトとぶつからないよう、コライダーを切っておく
 				col.enabled = false;
@@ -397,7 +451,7 @@ public class MoveWizard : MonoBehaviour
 				//一定時間後にこのオブジェクトを削除する
 				StartCoroutine(DestroyThisObject());
 
-				isDead = true;
+				_isDead = true;
 				return;
 			}
 
@@ -422,7 +476,7 @@ public class MoveWizard : MonoBehaviour
 		yield return new WaitForSeconds(4.0f);
 
 		//N%の確率でポーションを落とす
-		if (Random.Range(0f, 100.0f) <= 20)
+		if (Random.Range(0f, 100.0f) <= dropRate)
 		{
 			Vector3 potionPos = transform.position;
 			potionPos.y = 0;

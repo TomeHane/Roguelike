@@ -23,6 +23,9 @@ public class PlayerController : MonoBehaviour
     //ゲームオーバー画面を表示するオブジェクト
     [SerializeField]
     GameObject gameOverController;
+    //SEを鳴らす
+    [SerializeField]
+    MusicPlayer musicPlayer;
 
     //自オブジェクト
     Rigidbody rb;
@@ -327,6 +330,9 @@ public class PlayerController : MonoBehaviour
         //ポーションに当たった場合
         if (other.gameObject.tag == "Potion")
         {
+            //回復SEを鳴らす
+            musicPlayer.PlaySE(MusicPlayer.SeName.Recovery);
+
             //回復処理
             hp += 50.0f;
             if (hp > maxHp)
@@ -359,9 +365,14 @@ public class PlayerController : MonoBehaviour
             {
                 case "HitSkeletonSword":
                     getDamage = 10.0f;
+                    //被斬撃SEを鳴らす
+                    musicPlayer.PlaySE(MusicPlayer.SeName.PlayerHit, 1.0f);
                     break;
                 case "Fireball(Clone)":
                     getDamage = 15.0f;
+                    break;
+                case "FireballBoss(Clone)":
+                    getDamage = 20.0f;
                     break;
                 default:
                     break;
@@ -462,8 +473,25 @@ public class PlayerController : MonoBehaviour
         moveSpeed = idleSpeed;
         animator.SetFloat("moveSpeed", moveSpeed);
         movingVelocity = Vector3.zero;
+
+        //ワープSEを鳴らす
+        StartCoroutine(PlayWarpSounds());
     }
 
+    //ワープSEを鳴らすコルーチン
+    IEnumerator PlayWarpSounds()
+    {
+        //出発時のワープ音
+        musicPlayer.PlaySE(MusicPlayer.SeName.Warp, 1.0f, 1.5f);
+
+        yield return new WaitForSeconds(3.0f);
+
+        //到着時のワープ音
+        musicPlayer.PlaySE(MusicPlayer.SeName.WarpArrive, 0.8f, 1.5f);
+    }
+
+
+    //-----------以下、接敵時に向きが変わらないようにするための処理----------
 
     private void OnCollisionEnter(Collision collision)
     {

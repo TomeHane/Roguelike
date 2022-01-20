@@ -13,6 +13,14 @@ public class Fireball_custom : MonoBehaviour
     Rigidbody rb;
     Collider col;
 
+    //Fireball自身にAudioSourceを持たせる
+    [SerializeField]
+    AudioSource fireballSource;
+    [SerializeField]
+    AudioClip se_fire;
+    [SerializeField]
+    AudioClip se_explosion;
+
     public void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -25,6 +33,10 @@ public class Fireball_custom : MonoBehaviour
         //プレイヤーか壁にぶつかったら
         if (other.gameObject.tag == "Player" || other.gameObject.tag == "Wall")
         {
+            //爆発音を鳴らす
+            fireballSource.clip = se_explosion;
+            fireballSource.Play();
+
             //物理演算を停止する
             rb.Sleep();
             //これまで動いていたエフェクトを消す
@@ -63,6 +75,10 @@ public class Fireball_custom : MonoBehaviour
     //子オブジェクトの状態を有効[無効]にする
     public void OnEnable()
     {
+        //発射音を鳴らす
+        fireballSource.clip = se_fire;
+        fireballSource.Play();
+
         if (fieryEffect != null) {
             fieryEffect.SetActive(true);
         }
